@@ -45,5 +45,6 @@ pub enum BinaryOp {
 
 #[derive(Clone,Debug)]
 pub enum UnaryOp {
+    Dereference,
     Not,
 }

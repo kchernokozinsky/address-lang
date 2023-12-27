@@ -23,7 +23,9 @@ pub Expression: Expression = {
 
     <value:IntLiteral> => Expression::Int{value},
     <name:Identifier> => Expression::Var{name},
-
+    "!" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
+    "`" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
+    
     #[precedence(level="1")] #[assoc(side="left")]
 
     <lhs:Expression> "*" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
