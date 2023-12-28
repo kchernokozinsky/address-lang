@@ -14,6 +14,7 @@ pub enum DeclarationType {
 pub enum Statement {
     Declare{lhs: Expression, rhs: Expression, dt: DeclarationType},
     Assign{lhs: Expression, rhs: Expression},
+    Replace{lhs: Expression, rhs: Expression},
     Expression{expression: Expression},
     
 }
@@ -32,7 +33,7 @@ pub enum BinaryOp {
     NE,
     GT,
     LT,
-
+    
     Sum,
     Sub,
     Mul,
