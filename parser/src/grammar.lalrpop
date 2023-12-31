@@ -9,14 +9,16 @@ pub Algorithm: Algorithm = {
 pub Statement: Statement = {
     #[precedence(level="0")]
 
-    "let" <lhs:Expression> "=" <rhs:Expression> ";" => Statement::Declare{lhs, rhs, dt: DeclarationType::Var},
+    "let" <lhs:Expression> "=" <rhs:Expression> ";"   => Statement::Declare{lhs, rhs, dt: DeclarationType::Var},
     "const" <lhs:Expression> "=" <rhs:Expression> ";" => Statement::Declare{lhs, rhs, dt: DeclarationType::Const},
-    <lhs:Expression> "<=>" <rhs:Expression> ";" => Statement::Replace{lhs, rhs},
-    <lhs:Expression> "=>" <rhs:Expression> ";" => Statement::Assign{lhs: rhs,rhs: lhs},
-    <lhs:Expression> "=" <rhs:Expression> ";" => Statement::Assign{lhs, rhs},
-    #[precedence(level="1")] #[assoc(side="left")]
-    <expression: Expression> ";" => Statement::Expression{expression}
+    <lhs:Expression> "<=>" <rhs:Expression> ";"       => Statement::Replace{lhs, rhs},
+    <lhs:Expression> "=>" <rhs:Expression> ";"        => Statement::Assign{lhs: rhs,rhs: lhs},
+    <lhs:Expression> "=" <rhs:Expression> ";"         => Statement::Assign{lhs, rhs},
 
+    #[precedence(level="1")] #[assoc(side="left")]
+
+    <expression: Expression> ";" => Statement::Expression{expression},
+    "!"  ";"                     => Statement::Exit
     };
 
 pub Expression: Expression = {
@@ -26,7 +28,7 @@ pub Expression: Expression = {
     <name:Identifier> => Expression::Var{name},
     "not" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
     "`" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
-    
+    <function: Identifier> "(" <args: Expression> ")" => Expression::Call{function, args: vec![Box::new(args)]},
     #[precedence(level="1")] #[assoc(side="left")]
 
     <lhs:Expression> "*" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},

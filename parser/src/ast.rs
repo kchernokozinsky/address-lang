@@ -1,5 +1,5 @@
-#[derive(Clone,Debug)]
 
+#[derive(Clone,Debug)]
 pub enum Algorithm {
     Body{statements: Vec<Statement>},
 }
@@ -16,6 +16,7 @@ pub enum Statement {
     Assign{lhs: Expression, rhs: Expression},
     Replace{lhs: Expression, rhs: Expression},
     Expression{expression: Expression},
+    Exit
     
 }
 
@@ -23,6 +24,7 @@ pub enum Statement {
 pub enum Expression {
     Int{value: i64},
     Var{name: String},
+    Call{function: String, args: Vec<Box<Expression>>},
     UnaryOp{op: UnaryOp, expr: Box<Expression>},
     BinaryOp{op: BinaryOp, lhs: Box<Expression>, rhs: Box<Expression>},
 }

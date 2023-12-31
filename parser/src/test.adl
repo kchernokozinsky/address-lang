@@ -1,2 +1,0 @@
-let varname = 1 + 2 / 3;
-``varname;

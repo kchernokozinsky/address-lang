@@ -10,3 +10,4 @@ lalrpop = "0.20.0"
 
 [dependencies]
 lalrpop-util = {version = "0.20.0", features = ["lexer"]}
+rand = "0.8.5"
