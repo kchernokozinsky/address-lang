@@ -23,12 +23,11 @@ pub Statement: Statement = {
 
 pub Expression: Expression = {
     #[precedence(level="0")] 
-
     Term,
     <name:Identifier> => Expression::Var{name},
     "not" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
     "`" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
-    <function: Identifier> "(" <args: Expression> ")" => Expression::Call{function, args: vec![Box::new(args)]},
+    <function: Identifier> "(" <args: Arg> ")" => Expression::Call{function, args: vec![Box::new(args)]},
     #[precedence(level="1")] #[assoc(side="left")]
 
     <lhs:Expression> "*" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
@@ -46,6 +45,10 @@ Term: Expression = {
     "(" <Expression> ")"
 };
 
+Arg: Expression = {
+    Expression,
+};
+
 Identifier: String = {
     <s:r"[_a-zA-Z][_a-zA-Z0-9]*"> => s.to_string(),
 };
@@ -55,7 +58,8 @@ IntLiteral: i64 = {
 };
 
 match {
-    r"\s*" => {},
-    r"#[^\n\r]*[\n\r]*" => {},
-    _,
+    r"\s*" => { }, // The default whitespace skipping is disabled if an `ignore pattern` is specified
+    r"//[^\n\r]*[\n\r]*" => { }, // Skip `// comments`
+    r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => { },  // Skip `/* comments */`
+    _
 }

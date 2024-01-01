@@ -1,5 +1,5 @@
 use crate::ast::*;
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 pub struct Environment {
     function_space: HashMap<String, Value>,
@@ -43,7 +43,7 @@ impl Environment {
         self.address_to_value.insert(address, value);
     }
 
-    pub fn get_value_by_address(&self, address: i64, value: Value) -> Result<&Value, String> {
+    pub fn get_value_by_address(&self, address: i64) -> Result<&Value, String> {
         match self.address_to_value.get(&address) {
             Some(v) => Ok(v),
             None => return Err(format!("Address '{}' is empty", address)),
@@ -82,6 +82,20 @@ fn eval_statement(env: &mut Environment, statement: Statement) -> Result<(), Str
             bind(env, &lhs, address)
         }
 
+        Statement::Assign { lhs, rhs } => {
+            let address = match eval_expression(env, lhs.clone()) {
+                Ok(Value::Int { value }) => value,
+                _ => return Err(format!("Expression '{:?}' is not an address", rhs)),
+            };
+
+            let value = match eval_expression(env, rhs.clone()) {
+                Ok(v) => v,
+                Err(e) => return Err(e),
+            };
+
+            Ok(env.fill_address(address, value))
+        }
+
         _ => Err(format!("unhandled statement: {:?}", statement)),
     }
 }
@@ -116,14 +130,49 @@ fn eval_expression(env: &mut Environment, expression: Expression) -> Result<Valu
             } else {
                 Err(format!("'{}' isn`t  function", &function))
             }
+        },
+
+        Expression::BinaryOp { op, lhs, rhs } => {
+            let lv = match eval_expression(env, *lhs) {
+                Ok(v) => v,
+                Err(e) => return  Err(e),
+            };
+
+            let rv = match eval_expression(env, *rhs) {
+                Ok(v) => v,
+                Err(e) => return  Err(e),
+            };
+
+
+            match op  {
+                BinaryOp::Sum => Value::sum(lv, rv),
+                BinaryOp::Sub => Value::sub(lv, rv),
+                _ => Err(format!("operator {:?} is unhandled", op)) 
+            }
+
         }
 
         Expression::Var { name } => env.get_variable(&name),
+
+        Expression::UnaryOp { op, expr } => {
+            match op {
+                UnaryOp::Dereference => match eval_expression(env, *expr.clone())
+                {
+                    Ok(Value::Int { value }) => match env.get_value_by_address(value) {
+                        Ok(value) => Ok(value.clone()),
+                        Err(e) => Ok(Value::NIL)
+                    },
+                    _ => return Err(format!("Expression '{:?}' is not an address", expr)),
+                },
+                _ => Err(format!("operator {:?} is unhandled", op)),
+            }
+        },
+
         _ => Err(format!("unhandled expression: {:?}", expression)),
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     NIL,
     Int {
@@ -132,4 +181,33 @@ pub enum Value {
     Function {
         function: fn(Vec<Value>) -> Result<Value, String>,
     },
+}
+impl Value {
+    fn sum(lv: Value, rv: Value) -> Result<Value, String> {
+        let lv_ = match lv {
+            Value::Int { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        let rv_ = match rv {
+            Value::Int { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        Ok(Value::Int{value: lv_ + rv_})
+    }
+
+    fn sub(lv: Value, rv: Value) -> Result<Value, String> {
+        let lv_ = match lv {
+            Value::Int { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        let rv_ = match rv {
+            Value::Int { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        Ok(Value::Int{value: lv_ - rv_})
+    }
 }

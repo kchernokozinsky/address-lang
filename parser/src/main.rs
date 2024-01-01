@@ -16,7 +16,7 @@ fn main() {
     let mut env = Environment::new();
     env.add_function("print", Value::Function { function: print_ });
     let ast: Algorithm = grammar::AlgorithmParser::new().parse(&test).unwrap();
-    println!("{:?}", ast);
+    // println!("{:?}", ast);
     let result = eval_algorithm(&mut env, ast);
     println!("{:?}", result);
 }
