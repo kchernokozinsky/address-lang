@@ -1,8 +1,11 @@
 pub mod ast;
-pub mod builtin_functions;
+pub mod builtins;
 pub mod evaluation;
+pub mod lexer;
+
+use lexer::*;
 use ast::*;
-use builtin_functions::*;
+use builtins::*;
 use evaluation::*;
 use std::{fs::File, io::BufRead, io::BufReader};
 #[macro_use]
@@ -15,7 +18,8 @@ fn main() {
     let test = read_test();
     let mut env = Environment::new();
     env.add_function("print", Value::Function { function: print_ });
-    let ast: Algorithm = grammar::AlgorithmParser::new().parse(&test).unwrap();
+    let lexer = Lexer::new(&test);
+    let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
     // println!("{:?}", ast);
     let result = eval_algorithm(&mut env, ast);
     println!("{:?}", result);
