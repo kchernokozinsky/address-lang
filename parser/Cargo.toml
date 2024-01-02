@@ -1,0 +1,13 @@
+[package]
+name = "parser"
+version = "0.1.0"
+edition = "2021"
+
+description = "The parser for the address programming language"
+
+[build-dependencies]
+lalrpop = "0.20.0"
+
+[dependencies]
+lalrpop-util = {version = "0.20.0", features = ["lexer"]}
+rand = "0.8.5"
