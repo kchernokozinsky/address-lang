@@ -50,7 +50,7 @@ impl<'input> Lexer<'input> {
                     self.next_char();
                 }
             } else {
-                if !c.is_ascii_whitespace() {
+                if c == '\n' || !c.is_ascii_whitespace() {
                     return;
                 }
                 self.next_char();
@@ -131,27 +131,6 @@ impl<'input> Lexer<'input> {
         let raw_int = &self.raw_chars[start..end];
         let value: i64 = raw_int.parse().unwrap();
         let t = Token::INTEGER_LITERAL(value);
-
-        (start_loc, t, end_loc)
-    }
-
-    fn next_ident(&mut self) -> Span {
-        let start = self.index;
-        let start_loc = self.loc();
-
-        self.next_char();
-
-        while let Some(c) = self.peek_char() {
-            if !c.is_ascii_alphanumeric() && c != '_' {
-                break;
-            }
-            self.next_char();
-        }
-        let end = self.index;
-        let end_loc = self.loc();
-
-        let value: &str = &self.raw_chars[start + 1..end];
-        let t = Token::IDENTIFIER(value.to_string());
 
         (start_loc, t, end_loc)
     }
@@ -281,6 +260,8 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         'L' => Some(Token::LOOP),
         'P' => Some(Token::PREDICATE),
         '\'' => Some(Token::OPERATOR_APOSTROPHE),
+        '\n' => Some(Token::NEW_LINE),
+
 
         _ => None,
     }
