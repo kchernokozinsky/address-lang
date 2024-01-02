@@ -1,5 +1,5 @@
 use crate::ast::*;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 pub struct Environment {
     function_space: HashMap<String, Value>,
@@ -160,7 +160,7 @@ fn eval_expression(env: &mut Environment, expression: Expression) -> Result<Valu
                 {
                     Ok(Value::Int { value }) => match env.get_value_by_address(value) {
                         Ok(value) => Ok(value.clone()),
-                        Err(e) => Ok(Value::NIL)
+                        _ => Ok(Value::NIL)
                     },
                     _ => return Err(format!("Expression '{:?}' is not an address", expr)),
                 },

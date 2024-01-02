@@ -1,4 +1,1 @@
-5 => 8;
-let x = 8; 
-print (x);
-print('x);
+5 => 8; let x = '8 + 8; let y = x + 3; print (x); print(y, 5); 

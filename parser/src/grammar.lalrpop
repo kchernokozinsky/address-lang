@@ -5,54 +5,86 @@ use crate::lexer::token::Token;
 grammar;
 
 pub Algorithm: Algorithm = {
-    <statements:Statement*> => Algorithm::Body{statements},
+    <statements:Statements> => Algorithm::Body{statements},
 };
 
 pub Statement: Statement = {
-    #[precedence(level="0")]
+    "LET" <lhs:Expression> "=" <rhs:Expression> => Statement::Declare{lhs, rhs, dt: DeclarationType::Var},
+    
+    <lhs:Expression> "<=>" <rhs:Expression> => Statement::Replace{lhs, rhs},
+    <lhs:Expression> "=>" <rhs:Expression> => Statement::Assign{lhs: rhs,rhs: lhs},
+    <lhs:Expression> "=" <rhs:Expression> => Statement::Assign{lhs, rhs},
 
-    "LET" <lhs:Expression> "=" <rhs:Expression> ";"   => Statement::Declare{lhs, rhs, dt: DeclarationType::Var},
-    "CONST" <lhs:Expression> "=" <rhs:Expression> ";" => Statement::Declare{lhs, rhs, dt: DeclarationType::Const},
-    <lhs:Expression> "<=>" <rhs:Expression> ";"       => Statement::Replace{lhs, rhs},
-    <lhs:Expression> "=>" <rhs:Expression> ";"        => Statement::Assign{lhs: rhs,rhs: lhs},
-    <lhs:Expression> "=" <rhs:Expression> ";"         => Statement::Assign{lhs, rhs},
-
-    #[precedence(level="1")] #[assoc(side="left")]
-
-    <expression: Expression> ";" => Statement::Expression{expression},
-    "!"  ";"                     => Statement::Exit
+    <expression: Expression> => Statement::Expression{expression},
+    "!"                     => Statement::Exit
     };
 
 pub Expression: Expression = {
-    #[precedence(level="0")] 
-    Term,
-    <name:"IDENTIFIER"> => Expression::Var{name},
-    "NOT" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
-    "'" <expression:Expression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
-    <function: "IDENTIFIER"> "(" <args: Arg> ")" => Expression::Call{function, args: vec![Box::new(args)]},
-    #[precedence(level="1")] #[assoc(side="left")]
-
-    <lhs:Expression> "*" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:Expression> "/" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Div, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-
-    #[precedence(level="2")] #[assoc(side="left")]
-    
-    <lhs:Expression> "+" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:Expression> "-" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:Expression> "==" <rhs:Expression> => Expression::BinaryOp{op: BinaryOp::EQ, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    BinaryOperator
 };
 
-Term: Expression = {
-    <value:IntLiteral> => Expression::Int{value},
-    "(" <Expression> ")"
+BinaryOperator: Expression = {
+    <lhs:BinaryOperator> "+" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:BinaryOperator> "-" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    FactorExpression
+}
+
+FactorExpression: Expression = {
+    <lhs:PrimaryExpression> "*" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:PrimaryExpression> "/" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Div, lhs: Box::new(lhs), rhs: Box::new(rhs)}, 
+    PrimaryExpression
 };
 
-Arg: Expression = {
-    Expression,
+UnaryOperator: Expression = {
+    "NOT" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
+    "'" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
+}
+
+Comma<T>: Vec<T> = { // (1)
+    <mut v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
 };
 
-IntLiteral: i64 = {
-    <n:"INTEGER_LITERAL"> => n,
+pub Parameters = Comma<Expression>;
+
+
+Semicolon<T>: Vec<T> = { // (1)
+    <mut v:(<T> ";")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+pub Statements = Semicolon<Statement>;
+
+
+FunctionCall: Expression = {
+    <function: "IDENTIFIER"> "(" <args: Parameters> ")" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
+}
+
+
+PrimaryExpression: Expression = {
+    IntLiteral,
+    UnaryOperator,
+    FunctionCall,
+    Variable,
+    "(" <Expression> ")",
+};
+
+Variable: Expression = {
+    <name:"IDENTIFIER"> => Expression::Var{name}
+}
+
+IntLiteral: Expression = {
+    <n:"INTEGER_LITERAL"> => Expression::Int{value: n},
 };
 
 extern {
