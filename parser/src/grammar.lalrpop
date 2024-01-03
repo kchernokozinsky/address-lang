@@ -5,7 +5,24 @@ use crate::lexer::token::Token;
 grammar;
 
 pub Algorithm: Algorithm = {
-    <statements:Statements> => Algorithm::Body{statements},
+    <lines:FileLine*> => Algorithm::Body{lines},
+};
+
+pub FileLine: FileLine = {
+    <statements:Statements> "NEW_LINE"=> FileLine::Line{statements},
+    <statements:Statements> "END_OF_FILE"=> FileLine::Line{statements},
+    "..." <labels: Labels>  "NEW_LINE"=>  FileLine::LabeledLine{labels},
+    "..." <labels: Labels>  "END_OF_FILE"=>  FileLine::LabeledLine{labels},
+}
+
+Labels: Vec<String> = { // (1)
+    <mut v:(<Identifier> ",")*> <e:Identifier?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
 };
 
 pub Statement: Statement = {
@@ -52,7 +69,6 @@ Comma<T>: Vec<T> = { // (1)
 
 pub Parameters = Comma<Expression>;
 
-
 Semicolon<T>: Vec<T> = { // (1)
     <mut v:(<T> ";")*> <e:T?> => match e { // (2)
         None => v,
@@ -65,11 +81,9 @@ Semicolon<T>: Vec<T> = { // (1)
 
 pub Statements = Semicolon<Statement>;
 
-
 FunctionCall: Expression = {
     <function: "IDENTIFIER"> "(" <args: Parameters> ")" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
 }
-
 
 PrimaryExpression: Expression = {
     IntLiteral,
@@ -85,6 +99,10 @@ Variable: Expression = {
 
 IntLiteral: Expression = {
     <n:"INTEGER_LITERAL"> => Expression::Int{value: n},
+};
+
+Identifier: String = {
+    <i: "IDENTIFIER"> => i
 };
 
 extern {

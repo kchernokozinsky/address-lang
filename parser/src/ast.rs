@@ -1,7 +1,13 @@
 
 #[derive(Clone,Debug)]
 pub enum Algorithm {
-    Body{statements: Vec<Statement>},
+    Body{lines: Vec<FileLine>},
+}
+
+#[derive(Clone,Debug)]
+pub enum FileLine {
+    Line{statements: Vec<Statement>}, 
+    LabeledLine{labels: Vec<String>}
 }
 
 #[derive(Clone,Debug)]

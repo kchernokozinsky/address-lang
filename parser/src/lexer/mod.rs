@@ -4,9 +4,9 @@
 pub mod location;
 pub mod token;
 use location::*;
-use token::*;
 use std::iter::Peekable;
 use std::str::CharIndices;
+use token::*;
 
 #[derive(Debug)]
 pub enum LexError {
@@ -19,6 +19,8 @@ pub struct Lexer<'input> {
     index: usize,
     current: Option<(usize, char)>,
     location: Location,
+    end: bool,
+    skipped_chars: Vec<Option<(usize, char)>>,
 }
 
 impl<'input> Lexer<'input> {
@@ -37,6 +39,8 @@ impl<'input> Lexer<'input> {
             index: 0,
             current,
             location,
+            end: false,
+            skipped_chars: vec![],
         }
     }
 
@@ -67,7 +71,15 @@ impl<'input> Lexer<'input> {
     }
 
     fn next_char(&mut self) {
-        if let Some((i, c)) = self.chars.next() {
+        let v = if !self.skipped_chars.is_empty() {
+            match self.skipped_chars.pop() {
+                Some(cur) => cur,
+                None => None,
+            }
+        } else {
+            self.chars.next()
+        };
+        if let Some((i, c)) = v {
             self.index = i;
             self.current = Some((i, c));
 
@@ -79,6 +91,29 @@ impl<'input> Lexer<'input> {
         } else {
             self.index = self.raw_chars.len();
             self.current = None;
+        }
+    }
+
+    fn move_back(&mut self) {
+        if self.index == 0 {
+            return;
+        }
+
+        self.skipped_chars.push(self.current.clone());
+        // Retrieve the index and character of the previous position
+        let prev = self.raw_chars[..self.index].char_indices().rev().next();
+
+        if let Some((prev_index, prev_char)) = prev {
+            // Update the index and current character to the previous position
+            self.index = prev_index;
+            self.current = Some((prev_index, prev_char));
+
+            // Adjust the location accordingly
+            if prev_char == '\n' {
+                self.location.move_back_newline();
+            } else {
+                self.location.go_left();
+            }
         }
     }
 
@@ -105,9 +140,11 @@ impl<'input> Lexer<'input> {
             "null" => Token::NULL,
             "true" => Token::TRUE,
             "false" => Token::FALSE,
-            "..." => Token::OPERATOR_ELLIPSIS,
-            "<=>" => Token::OPERATOR_REPLACE,
             "del" => Token::DEL,
+            "L" => Token::LOOP,
+            "P" => Token::PREDICATE,
+            "or" => Token::OR,
+            "and" => Token::AND,
 
             s => Token::IDENTIFIER(s.to_string()),
         };
@@ -160,52 +197,131 @@ impl<'input> Lexer<'input> {
     fn next_symbol_token(&mut self, c: char) -> Option<Span> {
         let start_loc = self.loc();
 
-        if let Some(initial_t) = match_single_symbol_token(c) {
-            self.next_char();
-            let end_loc = self.loc();
-
-            let next_char = if let Some(c) = self.peek_char() {
-                c
-            } else {
-                return Some((start_loc, initial_t, end_loc));
-            };
-
-            let t = if let Some(t) = match_double_symbol_token(c, next_char) {
-                t
-            } else {
-                return Some((start_loc, initial_t, end_loc));
-            };
-
-            self.next_char();
-            let end_loc = self.loc();
-
-            Some((start_loc, t, end_loc))
-        } else {
-            self.next_double_symbol_token(c)
+        match match_single_symbol_token(c) {
+            Some(initial_t) => {
+                self.next_char();
+                if let Some(next_char_b) = self.peek_char() {
+                    match match_double_symbol_token(c, next_char_b) {
+                        Some(_) => self.next_double_symbol_token_(c, next_char_b),
+                        None => {
+                            self.next_char();
+                            if let Some(next_char_c) = self.peek_char() {
+                                match match_tripple_symbol_token(c, next_char_b, next_char_c) {
+                                    Some(token) => {
+                                        self.next_char();
+                                        return Some((start_loc, token, self.loc()));
+                                    }
+                                    None => {
+                                        self.move_back();
+                                        return Some((start_loc, initial_t, self.loc()));
+                                    }
+                                }
+                            } else {
+                                self.move_back();
+                                return Some((start_loc, initial_t, self.loc()));
+                            };
+                        }
+                    }
+                } else {
+                    Some((start_loc, initial_t, self.loc()))
+                }
+            }
+            None => self.next_double_symbol_token(c),
         }
     }
 
-    fn next_double_symbol_token(&mut self, c: char) -> Option<Span> {
+    fn next_double_symbol_token_(&mut self, a: char, b: char) -> Option<Span> {
         let start_loc = self.loc();
+        let t = match_double_symbol_token(a, b);
+        match t {
+            Some(t) => {
+                self.next_char();
+                let c: char = if let Some(c) = self.peek_char() {
+                    c
+                } else {
+                    // если закончились символы то вернуть двух символьный токен
+                    return Some((start_loc, t, self.loc()));
+                };
 
-        self.next_char();
-        let next_char = if let Some(c) = self.peek_char() {
-            c
-        } else {
-            return None;
-        };
+                match match_tripple_symbol_token(a, b, c) {
+                    Some(token) => {
+                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        self.next_char();
+                        return Some((start_loc, token, self.loc()));
+                    }
+                    // иначе вернуть двух символьный токен
+                    None => return Some((start_loc, t, self.loc())),
+                }
+            }
+            None => {
+                let c: char = if let Some(c) = self.peek_char() {
+                    c
+                } else {
+                    // если закончились символы то вернуть двух символьный токен
+                    return None;
+                };
 
-        self.next_char();
-        let end_loc = self.loc();
-
-        let t = if let Some(t) = match_double_symbol_token(c, next_char) {
-            t
-        } else {
-            return None;
-        };
-
-        Some((start_loc, t, end_loc))
+                match match_tripple_symbol_token(a, b, c) {
+                    Some(token) => {
+                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        self.next_char();
+                        return Some((start_loc, token, self.loc()));
+                    }
+                    // иначе вернуть двух символьный токен
+                    None => return None,
+                }
+            }
+        }
     }
+
+    fn next_double_symbol_token(&mut self, a: char) -> Option<Span> {
+        let start_loc = self.loc();
+        self.next_char();
+
+        let b = self.peek_char()?;
+        let t = match_double_symbol_token(a, b);
+        match t {
+            Some(t) => {
+                self.next_char();
+                let c: char = if let Some(c) = self.peek_char() {
+                    c
+                } else {
+                    // если закончились символы то вернуть двух символьный токен
+                    return Some((start_loc, t, self.loc()));
+                };
+
+                match match_tripple_symbol_token(a, b, c) {
+                    Some(token) => {
+                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        let end_location = self.loc();
+                        self.next_char();
+                        return Some((start_loc, token, end_location));
+                    }
+                    // иначе вернуть двух символьный токен
+                    None => return Some((start_loc, t, self.loc())),
+                }
+            }
+            None => {
+                let c: char = if let Some(c) = self.peek_char() {
+                    c
+                } else {
+                    // если закончились символы то вернуть двух символьный токен
+                    return None;
+                };
+
+                match match_tripple_symbol_token(a, b, c) {
+                    Some(token) => {
+                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        self.next_char();
+                        return Some((start_loc, token, self.loc()));
+                    }
+                    // иначе вернуть двух символьный токен
+                    None => return None,
+                }
+            }
+        }
+    }
+
 }
 
 pub type Span = (Location, Token, Location);
@@ -216,23 +332,31 @@ impl<'input> Iterator for Lexer<'input> {
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace_and_comments();
 
-        let c = self.peek_char()?;
+        let c = self.peek_char();
 
-        let result = if c.is_ascii_alphabetic() {
-            Ok(self.next_keyword_or_identirier_literal())
-        } else if c.is_ascii_digit() {
-            Ok(self.next_int())
-        } else if c == '"' {
-            Ok(self.next_quoted_str_literal())
-        } else {
-            if let Some(t) = self.next_symbol_token(c) {
-                Ok(t)
+        if let Some(c) = c {
+            let result = if c.is_ascii_alphabetic() {
+                Ok(self.next_keyword_or_identirier_literal())
+            } else if c.is_ascii_digit() {
+                Ok(self.next_int())
+            } else if c == '"' {
+                Ok(self.next_quoted_str_literal())
             } else {
-                Err(LexError::Unexpected(self.loc(), c))
+                if let Some(t) = self.next_symbol_token(c) {
+                    Ok(t)
+                } else {
+                    Err(LexError::Unexpected(self.loc(), c))
+                }
+            };
+            Some(result)
+        } else {
+            if !self.end {
+                self.end = true;
+                Some(Ok((self.loc(), Token::END_OF_FILE, self.loc())))
+            } else {
+                None
             }
-        };
-
-        Some(result)
+        }
     }
 }
 
@@ -257,11 +381,8 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         ';' => Some(Token::SEMICOLON),
         '-' => Some(Token::OPERATOR_MINUS),
         '+' => Some(Token::OPERATOR_PLUS),
-        'L' => Some(Token::LOOP),
-        'P' => Some(Token::PREDICATE),
         '\'' => Some(Token::OPERATOR_APOSTROPHE),
         '\n' => Some(Token::NEW_LINE),
-
 
         _ => None,
     }
@@ -269,13 +390,20 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
 
 fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
     match (a, b) {
-        ('o', 'r') => Some(Token::OR),
         ('!', '=') => Some(Token::OPERATOR_NOT_EQUAL),
         ('=', '>') => Some(Token::OPERATOR_RIGHT_ARROW),
         ('=', '=') => Some(Token::OPERATOR_EQUAL_EQUAL),
         ('>', '=') => Some(Token::OPERATOR_GREATER_THAN_EQUAL),
         ('<', '=') => Some(Token::OPERATOR_LESS_THAN_EQUAL),
 
+        _ => None,
+    }
+}
+
+fn match_tripple_symbol_token(a: char, b: char, c: char) -> Option<Token> {
+    match (a, b, c) {
+        ('.', '.', '.') => Some(Token::OPERATOR_ELLIPSIS),
+        ('<', '=', '>') => Some(Token::OPERATOR_REPLACE),
         _ => None,
     }
 }

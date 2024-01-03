@@ -3,10 +3,18 @@
 use std::fmt;
 
 /// A location somewhere in the sourcecode.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct Location {
     row: usize,
     column: usize,
+    previos_column: usize,
+
+}
+
+impl fmt::Debug for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Location {{ row: {}, column: {} }}", self.row, self.column)
+    }
 }
 
 impl fmt::Display for Location {
@@ -48,7 +56,11 @@ impl Location {
 
 impl Location {
     pub fn new(row: usize, column: usize) -> Self {
-        Location { row, column }
+        Location { 
+            row, 
+            column, 
+            previos_column: column 
+        }
     }
 
     pub fn row(&self) -> usize {
@@ -65,6 +77,7 @@ impl Location {
     }
 
     pub fn go_right(&mut self) {
+        self.previos_column = self.column;
         self.column += 1;
     }
 
@@ -73,7 +86,16 @@ impl Location {
     }
 
     pub fn newline(&mut self) {
+        self.previos_column = self.column;
         self.row += 1;
         self.column = 1;
+    }
+
+
+    pub fn move_back_newline(&mut self) {
+        if self.row > 1 {
+            self.row -= 1;
+            self.column = self.previos_column;
+        }
     }
 }
