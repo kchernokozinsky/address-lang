@@ -11,8 +11,8 @@ pub Algorithm: Algorithm = {
 pub FileLine: FileLine = {
     <statements:Statements> "NEW_LINE"=> FileLine::Line{statements},
     <statements:Statements> "END_OF_FILE"=> FileLine::Line{statements},
-    "..." <labels: Labels>  "NEW_LINE"=>  FileLine::LabeledLine{labels},
-    "..." <labels: Labels>  "END_OF_FILE"=>  FileLine::LabeledLine{labels},
+    <labels: Labels> "..." "NEW_LINE"=>  FileLine::LabeledLine{labels},
+    <labels: Labels> "..." "END_OF_FILE"=>  FileLine::LabeledLine{labels},
 }
 
 Labels: Vec<String> = { // (1)

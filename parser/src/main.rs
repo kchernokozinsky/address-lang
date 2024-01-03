@@ -8,7 +8,6 @@ use lexer::*;
 use ast::*;
 use builtins::*;
 use evaluation::*;
-use std::{fs::File, io::BufRead, io::BufReader};
 #[macro_use]
 extern crate lalrpop_util;
 
