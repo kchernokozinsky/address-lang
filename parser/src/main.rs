@@ -23,9 +23,9 @@ fn main() {
     //     println!("{:?}", item);
     // }
     let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
-    println!("{:?}", ast);
-    // let result = eval_algorithm(&mut env, ast);
-    // println!("{:?}", result);
+    // println!("{:?}", ast);
+    let result = eval_algorithm(&mut env, ast);
+    println!("{:?}", result);
 }
 
 fn read_test() -> String {
