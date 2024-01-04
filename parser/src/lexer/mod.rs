@@ -388,6 +388,7 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         '\'' => Some(Token::Apostrophe),
         '\n' => Some(Token::NewLine),
         '|' => Some(Token::VerticalBar),
+        '@' => Some(Token::At),
         _ => None,
     }
 }

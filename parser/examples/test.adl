@@ -1,6 +1,10 @@
-6 => 8;
-lol, kek ...
-let x = '8 + 8 
-let y = x + 3 
-print (x) 
-print(y, '8)
+x = 5
+start ... 
+x = x + 1
+Print{x}; 
+P{ x < 10 } @start | @end
+
+
+
+end ... 
+Print{x - 20}

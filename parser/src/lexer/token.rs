@@ -43,6 +43,7 @@ pub enum Token {
     Exchange,
     Loop,
     Predicate,
+    At,
     Bang,
 
     // Basic Keywords:
@@ -99,6 +100,7 @@ impl fmt::Display for Token {
             Exchange => f.write_str("<=>"),
             Ellipsis => f.write_str("..."),
             Apostrophe => f.write_str("'"),
+            At => f.write_str("@"),
             Bang => f.write_str("!"),
 
             // Basic Keywords:

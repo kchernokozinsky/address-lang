@@ -10,7 +10,7 @@ pub Algorithm: Algorithm = {
 
 pub FileLine: FileLine = {
 
-        // FormulaLine,
+        FormulaLine,
         CommonLine
 };
 
@@ -60,10 +60,18 @@ Labels: Vec<String> = { // (1)
     }
 };
 pub OneLineStatement: OneLineStatement = {
-    UnconditionalJump,
     Loop
 };
 
+
+pub Predicate: Statement = {
+    "PREDICATE" "{" <condition:BoolBinaryOperator> "}" <l:Statement> "|" <r:Statement> => {
+        Statement::Predicate{
+            condition
+          , if_true: Box::new(l)
+          , if_false: Box::new(r)}
+        }
+};
 
 pub Loop: OneLineStatement = {
     "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression> "}" <alpha: Identifier> <betta: Identifier> => OneLineStatement::Loop{
@@ -74,11 +82,13 @@ pub Loop: OneLineStatement = {
       label_to: betta }
 };
 
-pub UnconditionalJump: OneLineStatement = {
-    <label: Identifier> => OneLineStatement::UnconditionalJump{label},
+pub UnconditionalJump: Statement = {
+    "@" <label: Identifier> => Statement::UnconditionalJump{label},
 };
 
 pub Statement: Statement = {
+    Predicate,
+    UnconditionalJump,
     <lhs:Expression> "=" <rhs:Expression> => Statement::Assign{lhs, rhs},
     <lhs:Expression> "<=>" <rhs:Expression> => Statement::Exchange{lhs, rhs},
     <lhs:Expression> "=>" <rhs:Expression> => Statement::Send{lhs: rhs,rhs: lhs},
@@ -89,14 +99,25 @@ pub Statement: Statement = {
 
 
 pub Expression: Expression = {
-    BinaryOperator
-};
+    BoolBinaryOperator,
+    };
 
-BinaryOperator: Expression = {
-    <lhs:BinaryOperator> "+" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:BinaryOperator> "-" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+ArithmeticExpression: Expression = {
+    <lhs:ArithmeticExpression> "+" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:ArithmeticExpression> "-" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
     FactorExpression
 }
+
+BoolBinaryOperator: Expression = {
+    <lhs:BoolBinaryOperator> "OR" <rhs:AndOperator> => Expression::BinaryOp{op: BinaryOp::Or, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    AndOperator,
+};
+
+AndOperator: Expression = {
+    <lhs:AndOperator> "AND" <rhs:BoolPrimaryOperator> => Expression::BinaryOp{op: BinaryOp::And, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    BoolPrimaryOperator,
+};
+
 
 FactorExpression: Expression = {
     <lhs:PrimaryExpression> "*" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
@@ -105,7 +126,7 @@ FactorExpression: Expression = {
 };
 
 UnaryOperator: Expression = {
-    "NOT" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
+    "!" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
     "'" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
 }
 #[inline]
@@ -119,7 +140,8 @@ Comma<T>: Vec<T> = { // (1)
     }
 };
 
-pub Parameters = Comma<Expression>;
+#[inline]
+Parameters = Comma<Expression>;
 
 #[inline]
 Semicolon<T>: Vec<T> = { // (1)
@@ -132,18 +154,29 @@ Semicolon<T>: Vec<T> = { // (1)
     }
 };
 
-pub Statements = Semicolon<Statement>;
+#[inline]
+Statements = Semicolon<Statement>;
 
 FunctionCall: Expression = {
-    <function: "IDENTIFIER"> "(" <args: Parameters> ")" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
+    <function: "IDENTIFIER"> "{" <args: Parameters> "}" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
 }
 
+BoolPrimaryOperator: Expression = {
+    <lhs:BoolPrimaryOperator> "==" <rhs:ArithmeticExpression> => Expression::BinaryOp{op: BinaryOp::EQ, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:BoolPrimaryOperator> "!=" <rhs:ArithmeticExpression> => Expression::BinaryOp{op: BinaryOp::NE, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:BoolPrimaryOperator> "<" <rhs:ArithmeticExpression> => Expression::BinaryOp{op: BinaryOp::LT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    ArithmeticExpression
+}
+
+
 PrimaryExpression: Expression = {
+    Bool,
     IntLiteral,
     UnaryOperator,
     FunctionCall,
     Variable,
     "(" <Expression> ")",
+
 };
 
 Variable: Expression = {
@@ -153,6 +186,12 @@ Variable: Expression = {
 IntLiteral: Expression = {
     <n:"INTEGER_LITERAL"> => Expression::Int{value: n},
 };
+
+Bool: Expression = {
+    "TRUE" => Expression::Bool{value: true},
+    "FALSE" => Expression::Bool{value: false},
+
+}
 
 Identifier: String = {
     <i: "IDENTIFIER"> => i
@@ -204,6 +243,7 @@ extern {
         "REPLACE" => Token::Replace,
         "LOOP" => Token::Loop,
         "PREDICATE" => Token::Predicate,
+        "@" => Token::At,
         "!" => Token::Bang,
 
         // Basic Keywords:

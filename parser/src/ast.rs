@@ -10,6 +10,15 @@ pub enum FileLine {
     FormulaLine{labels: Vec<String> ,statement: OneLineStatement},  
 }
 
+impl FileLine {
+    pub fn labels(&self) -> &Vec<String> {
+        match self {
+            FileLine::Line { labels, .. } => labels,
+            FileLine::FormulaLine { labels, .. } => labels,
+        }
+    }
+}
+
 #[derive(Clone,Debug)]
 pub enum DeclarationType {
     Const,
@@ -18,8 +27,6 @@ pub enum DeclarationType {
 
 #[derive(Clone,Debug)]
 pub enum OneLineStatement {
-    Empty,
-    UnconditionalJump{label: String},
     Loop{initial_value: Expression, step: Expression, last_value: Expression, label_unitl: String, label_to: String}
 }
 
@@ -29,12 +36,15 @@ pub enum Statement {
     Send{lhs: Expression, rhs: Expression},
     Exchange{lhs: Expression, rhs: Expression},
     Expression{expression: Expression},
+    UnconditionalJump{label: String},
+    Predicate{condition: Expression, if_true: Box<Statement>, if_false: Box<Statement>},
     Exit
     
 }
 
 #[derive(Clone,Debug)]
 pub enum Expression {
+    Bool{value: bool},
     Int{value: i64},
     Var{name: String},
     Call{function: String, args: Vec<Box<Expression>>},
