@@ -66,7 +66,7 @@ pub fn eval_algorithm(
 
 fn eval_file_line( env: &mut Environment, line: FileLine ) -> Result<(), String> {
         match line {
-            FileLine::Line { labels, statements } => {
+            FileLine::Line { labels: _s, statements } => {
                 for statement in statements {
                     if let Err(e) = eval_statement(env, statement) {
                         return Err(e);
@@ -74,7 +74,7 @@ fn eval_file_line( env: &mut Environment, line: FileLine ) -> Result<(), String>
                 }
                 Ok(())
             }
-            FileLine::FormulaLine{ labels, statement } => {
+            FileLine::FormulaLine{ labels: _, statement: _} => {
                 Ok(())
             },
         }
@@ -185,8 +185,6 @@ fn eval_expression(env: &mut Environment, expression: Expression) -> Result<Valu
                 _ => Err(format!("operator {:?} is unhandled", op)),
             }
         },
-
-        _ => Err(format!("unhandled expression: {:?}", expression)),
     }
 }
 

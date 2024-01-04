@@ -135,18 +135,19 @@ impl<'input> Lexer<'input> {
         let end_loc = self.loc();
 
         let t = match &self.raw_chars[start..end] {
-            "const" => Token::CONST,
-            "let" => Token::LET,
-            "null" => Token::NULL,
-            "true" => Token::TRUE,
-            "false" => Token::FALSE,
-            "del" => Token::DEL,
-            "L" => Token::LOOP,
-            "P" => Token::PREDICATE,
-            "or" => Token::OR,
-            "and" => Token::AND,
+            "const" => Token::Const,
+            "let" => Token::Let,
+            "null" => Token::Null,
+            "true" => Token::True,
+            "false" => Token::False,
+            "del" => Token::Del,
+            "L" => Token::Loop,
+            "P" => Token::Predicate,
+            "R"=> Token::Replace,
+            "or" => Token::Or,
+            "and" => Token::And,
 
-            s => Token::IDENTIFIER(s.to_string()),
+            s => Token::Identifier(s.to_string()),
         };
 
         (start_loc, t, end_loc)
@@ -167,7 +168,7 @@ impl<'input> Lexer<'input> {
 
         let raw_int = &self.raw_chars[start..end];
         let value: i64 = raw_int.parse().unwrap();
-        let t = Token::INTEGER_LITERAL(value);
+        let t = Token::IntegerLiteral(value);
 
         (start_loc, t, end_loc)
     }
@@ -189,7 +190,7 @@ impl<'input> Lexer<'input> {
 
         let id = &self.raw_chars[(start + 1)..(end - 1)];
 
-        let t = Token::STRING_LITERAL(id.to_string());
+        let t = Token::StringLiteral(id.to_string());
 
         (start_loc, t, end_loc)
     }
@@ -352,7 +353,7 @@ impl<'input> Iterator for Lexer<'input> {
         } else {
             if !self.end {
                 self.end = true;
-                Some(Ok((self.loc(), Token::END_OF_FILE, self.loc())))
+                Some(Ok((self.loc(), Token::EndOfFile, self.loc())))
             } else {
                 None
             }
@@ -362,28 +363,28 @@ impl<'input> Iterator for Lexer<'input> {
 
 fn match_single_symbol_token(c: char) -> Option<Token> {
     match c {
-        '!' => Some(Token::BANG),
-        '}' => Some(Token::RIGHT_CURLY_BRACE),
-        '{' => Some(Token::LEFT_CURLY_BRACE),
-        ']' => Some(Token::RIGHT_SQUARE_BRACKET),
-        '[' => Some(Token::LEFT_SQUARE_BRACKET),
-        ':' => Some(Token::COLON),
-        ',' => Some(Token::COMMA),
-        '/' => Some(Token::OPERATOR_SLASH),
-        '.' => Some(Token::OPERATOR_DOT),
-        '=' => Some(Token::OPERATOR_EQUAL),
-        '>' => Some(Token::OPERATOR_GREATER_THAN),
-        '<' => Some(Token::OPERATOR_LESS_THAN),
-        '%' => Some(Token::OPERATOR_PERCENT),
-        '*' => Some(Token::OPERATOR_MULTIPLY),
-        ')' => Some(Token::RIGHT_PARENTHESIS),
-        '(' => Some(Token::LEFT_PARENTHESIS),
-        ';' => Some(Token::SEMICOLON),
-        '-' => Some(Token::OPERATOR_MINUS),
-        '+' => Some(Token::OPERATOR_PLUS),
-        '\'' => Some(Token::OPERATOR_APOSTROPHE),
-        '\n' => Some(Token::NEW_LINE),
-        '|' => Some(Token::OPERATOR_VERTICAL_BAR),
+        '!' => Some(Token::Bang),
+        '}' => Some(Token::RightCurlyBrace),
+        '{' => Some(Token::LeftCurlyBrace),
+        ']' => Some(Token::RightSquareBracket),
+        '[' => Some(Token::LeftSquareBracket),
+        ':' => Some(Token::Colon),
+        ',' => Some(Token::Comma),
+        '/' => Some(Token::Slash),
+        '.' => Some(Token::Dot),
+        '=' => Some(Token::Equal),
+        '>' => Some(Token::GreaterThan),
+        '<' => Some(Token::LessThan),
+        '%' => Some(Token::Percent),
+        '*' => Some(Token::Multiply),
+        ')' => Some(Token::RightParenthesis),
+        '(' => Some(Token::LeftParenthesis),
+        ';' => Some(Token::Semicolon),
+        '-' => Some(Token::Minus),
+        '+' => Some(Token::Plus),
+        '\'' => Some(Token::Apostrophe),
+        '\n' => Some(Token::NewLine),
+        '|' => Some(Token::VerticalBar),
 
         _ => None,
     }
@@ -391,11 +392,11 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
 
 fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
     match (a, b) {
-        ('!', '=') => Some(Token::OPERATOR_NOT_EQUAL),
-        ('=', '>') => Some(Token::OPERATOR_RIGHT_ARROW),
-        ('=', '=') => Some(Token::OPERATOR_EQUAL_EQUAL),
-        ('>', '=') => Some(Token::OPERATOR_GREATER_THAN_EQUAL),
-        ('<', '=') => Some(Token::OPERATOR_LESS_THAN_EQUAL),
+        ('!', '=') => Some(Token::NotEqual),
+        ('=', '>') => Some(Token::Send),
+        ('=', '=') => Some(Token::EqualEqual),
+        ('>', '=') => Some(Token::GreaterThanEqual),
+        ('<', '=') => Some(Token::LessThanEqual),
 
         _ => None,
     }
@@ -403,8 +404,8 @@ fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
 
 fn match_tripple_symbol_token(a: char, b: char, c: char) -> Option<Token> {
     match (a, b, c) {
-        ('.', '.', '.') => Some(Token::OPERATOR_ELLIPSIS),
-        ('<', '=', '>') => Some(Token::OPERATOR_REPLACE),
+        ('.', '.', '.') => Some(Token::Ellipsis),
+        ('<', '=', '>') => Some(Token::Exchange),
         _ => None,
     }
 }
