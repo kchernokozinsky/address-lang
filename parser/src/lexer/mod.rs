@@ -143,7 +143,7 @@ impl<'input> Lexer<'input> {
             "del" => Token::Del,
             "L" => Token::Loop,
             "P" => Token::Predicate,
-            "R"=> Token::Replace,
+            "R" => Token::Replace,
             "or" => Token::Or,
             "and" => Token::And,
 
@@ -287,18 +287,18 @@ impl<'input> Lexer<'input> {
                 let c: char = if let Some(c) = self.peek_char() {
                     c
                 } else {
-                    // если закончились символы то вернуть двух символьный токен
+                    // if out of characters, return a two-character token
                     return Some((start_loc, t, self.loc()));
                 };
 
                 match match_tripple_symbol_token(a, b, c) {
                     Some(token) => {
-                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        // if it is a three-character token, return it and increase the index by 1
                         let end_location = self.loc();
                         self.next_char();
                         return Some((start_loc, token, end_location));
                     }
-                    // иначе вернуть двух символьный токен
+                    // otherwise return a two-character token
                     None => return Some((start_loc, t, self.loc())),
                 }
             }
@@ -306,23 +306,22 @@ impl<'input> Lexer<'input> {
                 let c: char = if let Some(c) = self.peek_char() {
                     c
                 } else {
-                    // если закончились символы то вернуть двух символьный токен
+                    // if out of characters, return a two-character token
                     return None;
                 };
 
                 match match_tripple_symbol_token(a, b, c) {
                     Some(token) => {
-                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        // if it is a three-character token but return it and increase the index by 1
                         self.next_char();
                         return Some((start_loc, token, self.loc()));
                     }
-                    // иначе вернуть двух символьный токен
+                    // otherwise return a two-character token
                     None => return None,
                 }
             }
         }
     }
-
 }
 
 pub type Span = (Location, Token, Location);
@@ -333,31 +332,35 @@ impl<'input> Iterator for Lexer<'input> {
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace_and_comments();
 
-        let c = self.peek_char();
+        // Return None if no characters left, handling the end of input
+        let c = match self.peek_char() {
+            None => {
+                if !self.end {
+                    self.end = true;
+                    return Some(Ok((self.loc(), Token::EndOfFile, self.loc())));
+                } else {
+                    return None;
+                }
+            }
+            Some(c) => c,
+        };
 
-        if let Some(c) = c {
-            let result = if c.is_ascii_alphabetic() {
+        // Processing next token based on the current character
+        Some(
+            if c.is_ascii_alphabetic() {
                 Ok(self.next_keyword_or_identirier_literal())
             } else if c.is_ascii_digit() {
                 Ok(self.next_int())
             } else if c == '"' {
                 Ok(self.next_quoted_str_literal())
             } else {
-                if let Some(t) = self.next_symbol_token(c) {
-                    Ok(t)
-                } else {
-                    Err(LexError::Unexpected(self.loc(), c))
-                }
-            };
-            Some(result)
-        } else {
-            if !self.end {
-                self.end = true;
-                Some(Ok((self.loc(), Token::EndOfFile, self.loc())))
-            } else {
-                None
-            }
-        }
+                // Process symbol or return an error
+                self.next_symbol_token(c).map_or_else(
+                    || Err(LexError::Unexpected(self.loc(), c)),
+                    Ok,
+                )
+            },
+        )
     }
 }
 
@@ -385,7 +388,6 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         '\'' => Some(Token::Apostrophe),
         '\n' => Some(Token::NewLine),
         '|' => Some(Token::VerticalBar),
-
         _ => None,
     }
 }
@@ -397,7 +399,6 @@ fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
         ('=', '=') => Some(Token::EqualEqual),
         ('>', '=') => Some(Token::GreaterThanEqual),
         ('<', '=') => Some(Token::LessThanEqual),
-
         _ => None,
     }
 }
