@@ -383,6 +383,7 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         '+' => Some(Token::OPERATOR_PLUS),
         '\'' => Some(Token::OPERATOR_APOSTROPHE),
         '\n' => Some(Token::NEW_LINE),
+        '|' => Some(Token::OPERATOR_VERTICAL_BAR),
 
         _ => None,
     }

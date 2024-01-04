@@ -66,7 +66,7 @@ pub fn eval_algorithm(
 
 fn eval_file_line( env: &mut Environment, line: FileLine ) -> Result<(), String> {
         match line {
-            FileLine::Line { statements } => {
+            FileLine::Line { labels, statements } => {
                 for statement in statements {
                     if let Err(e) = eval_statement(env, statement) {
                         return Err(e);
@@ -74,7 +74,7 @@ fn eval_file_line( env: &mut Environment, line: FileLine ) -> Result<(), String>
                 }
                 Ok(())
             }
-            FileLine::LabeledLine { labels } => {
+            FileLine::FormulaLine{ labels, statement } => {
                 Ok(())
             },
         }
@@ -91,7 +91,7 @@ fn eval_statement(env: &mut Environment, statement: Statement) -> Result<(), Str
             Ok(())
         }
 
-        Statement::Declare { lhs, rhs, dt } => {
+        Statement::Assign { lhs, rhs} => { 
             let address = match eval_expression(env, rhs.clone()) {
                 Ok(Value::Int { value }) => value,
                 _ => return Err(format!("Expression '{:?}' is not an address", rhs)),
@@ -100,7 +100,7 @@ fn eval_statement(env: &mut Environment, statement: Statement) -> Result<(), Str
             bind(env, &lhs, address)
         }
 
-        Statement::Assign { lhs, rhs } => {
+        Statement::Send { lhs, rhs } => {
             let address = match eval_expression(env, lhs.clone()) {
                 Ok(Value::Int { value }) => value,
                 _ => return Err(format!("Expression '{:?}' is not an address", rhs)),

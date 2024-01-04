@@ -6,8 +6,8 @@ pub enum Algorithm {
 
 #[derive(Clone,Debug)]
 pub enum FileLine {
-    Line{statements: Vec<Statement>}, 
-    LabeledLine{labels: Vec<String>}
+    Line{labels: Vec<String> ,statements: Vec<Statement>},
+    FormulaLine{labels: Vec<String> ,statement: OneLineStatement},  
 }
 
 #[derive(Clone,Debug)]
@@ -17,10 +17,17 @@ pub enum DeclarationType {
 }
 
 #[derive(Clone,Debug)]
+pub enum OneLineStatement {
+    Empty,
+    UnconditionalJump{label: String},
+    Loop{initial_value: Expression, step: Expression, last_value: Expression, label_unitl: String, label_to: String}
+}
+
+#[derive(Clone,Debug)]
 pub enum Statement {
-    Declare{lhs: Expression, rhs: Expression, dt: DeclarationType},
     Assign{lhs: Expression, rhs: Expression},
-    Replace{lhs: Expression, rhs: Expression},
+    Send{lhs: Expression, rhs: Expression},
+    Exchange{lhs: Expression, rhs: Expression},
     Expression{expression: Expression},
     Exit
     

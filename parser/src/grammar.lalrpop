@@ -9,12 +9,47 @@ pub Algorithm: Algorithm = {
 };
 
 pub FileLine: FileLine = {
-    <statements:Statements> "NEW_LINE"=> FileLine::Line{statements},
-    <statements:Statements> "END_OF_FILE"=> FileLine::Line{statements},
-    <labels: Labels> "..." "NEW_LINE"=>  FileLine::LabeledLine{labels},
-    <labels: Labels> "..." "END_OF_FILE"=>  FileLine::LabeledLine{labels},
+
+        // FormulaLine,
+        CommonLine
+};
+
+pub FormulaLine: FileLine = {
+         <labels: LabelsDeclaration?> <statement:OneLineStatement> "END_OF_FILE"=> { 
+        match labels {
+                        Some(labels) => FileLine::FormulaLine{labels, statement},
+                        None => FileLine::FormulaLine{labels: vec![], statement}
+                    }
+                },
+        <labels: LabelsDeclaration?> <statement:OneLineStatement> "NEW_LINE"=> { 
+        match labels {
+                        Some(labels) => FileLine::FormulaLine{labels, statement},
+                        None => FileLine::FormulaLine{labels: vec![], statement}
+                    }
+                },
 }
 
+pub CommonLine: FileLine = {
+        <labels: LabelsDeclaration?> <statements:Statements> "NEW_LINE"=> { 
+        match labels {
+                        Some(labels) => FileLine::Line{labels, statements},
+                        None => FileLine::Line{labels: vec![], statements}
+                    }
+                },
+    <labels: LabelsDeclaration?> <statements:Statements> "END_OF_FILE"=> { 
+        match labels {
+                        Some(labels) => FileLine::Line{labels, statements},
+                        None => FileLine::Line{labels: vec![], statements}
+                    }
+                },
+};
+
+
+pub LabelsDeclaration: Vec<String> = {
+    <labels: Labels> "..." => labels
+};
+
+#[inline]
 Labels: Vec<String> = { // (1)
     <mut v:(<Identifier> ",")*> <e:Identifier?> => match e { // (2)
         None => v,
@@ -24,17 +59,34 @@ Labels: Vec<String> = { // (1)
         }
     }
 };
+pub OneLineStatement: OneLineStatement = {
+    UnconditionalJump,
+    Loop
+};
+
+
+pub Loop: OneLineStatement = {
+    "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression> "}" <alpha: Identifier> <betta: Identifier> => OneLineStatement::Loop{
+        initial_value: a
+      , step: b
+      , last_value: c
+      , label_unitl: alpha, 
+      label_to: betta }
+};
+
+pub UnconditionalJump: OneLineStatement = {
+    <label: Identifier> => OneLineStatement::UnconditionalJump{label},
+};
 
 pub Statement: Statement = {
-    "LET" <lhs:Expression> "=" <rhs:Expression> => Statement::Declare{lhs, rhs, dt: DeclarationType::Var},
-    
-    <lhs:Expression> "<=>" <rhs:Expression> => Statement::Replace{lhs, rhs},
-    <lhs:Expression> "=>" <rhs:Expression> => Statement::Assign{lhs: rhs,rhs: lhs},
     <lhs:Expression> "=" <rhs:Expression> => Statement::Assign{lhs, rhs},
-
+    <lhs:Expression> "<=>" <rhs:Expression> => Statement::Exchange{lhs, rhs},
+    <lhs:Expression> "=>" <rhs:Expression> => Statement::Send{lhs: rhs,rhs: lhs},
+    "!"                     => Statement::Exit,
     <expression: Expression> => Statement::Expression{expression},
-    "!"                     => Statement::Exit
     };
+
+
 
 pub Expression: Expression = {
     BinaryOperator
@@ -56,7 +108,7 @@ UnaryOperator: Expression = {
     "NOT" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
     "'" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
 }
-
+#[inline]
 Comma<T>: Vec<T> = { // (1)
     <mut v:(<T> ",")*> <e:T?> => match e { // (2)
         None => v,
@@ -69,6 +121,7 @@ Comma<T>: Vec<T> = { // (1)
 
 pub Parameters = Comma<Expression>;
 
+#[inline]
 Semicolon<T>: Vec<T> = { // (1)
     <mut v:(<T> ";")*> <e:T?> => match e { // (2)
         None => v,
@@ -104,6 +157,7 @@ IntLiteral: Expression = {
 Identifier: String = {
     <i: "IDENTIFIER"> => i
 };
+
 
 extern {
     type Location = LexLocation;
