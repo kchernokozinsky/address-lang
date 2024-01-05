@@ -3,6 +3,9 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Null,
+    String {
+        value: String,
+    },
     Bool {
         value: bool,
     },
@@ -50,6 +53,7 @@ impl fmt::Display for Value {
             Value::Bool { value } => write!(f, "Boolean: {}", value),
             Value::Int { value } => write!(f, "Integer: {}", value),
             Value::Function { .. } => write!(f, "Function"),
+            Value::String { value } => write!(f, "String: {}", value),
         }
     }
 }

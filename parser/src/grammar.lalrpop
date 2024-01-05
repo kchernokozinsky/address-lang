@@ -9,7 +9,6 @@ pub Algorithm: Algorithm = {
 };
 
 pub FileLine: FileLine = {
-
         FormulaLine,
         CommonLine
 };
@@ -59,13 +58,14 @@ Labels: Vec<String> = { // (1)
         }
     }
 };
+
 pub OneLineStatement: OneLineStatement = {
     Loop
 };
 
 
 pub Predicate: Statement = {
-    "PREDICATE" "{" <condition:BoolBinaryOperator> "}" <l:Statement> "|" <r:Statement> => {
+    "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statement> "|" <r:Statement> => {
         Statement::Predicate{
             condition
           , if_true: Box::new(l)
@@ -99,36 +99,68 @@ pub Statement: Statement = {
 
 
 pub Expression: Expression = {
-    BoolBinaryOperator,
+    ExpressionPrecedence8,
     };
 
-ArithmeticExpression: Expression = {
-    <lhs:ArithmeticExpression> "+" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:ArithmeticExpression> "-" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    FactorExpression
+ExpressionPrecedence8: Expression = {
+    <lhs:ExpressionPrecedence8> "OR" <rhs:ExpressionPrecedence7> => Expression::BinaryOp{op: BinaryOp::Or, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    ExpressionPrecedence7,
+};
+
+ExpressionPrecedence7: Expression = {
+    <lhs:ExpressionPrecedence7> "AND" <rhs:ExpressionPrecedence6> => Expression::BinaryOp{op: BinaryOp::And, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    ExpressionPrecedence6,
+};
+
+ExpressionPrecedence6: Expression = {
+    <lhs:ExpressionPrecedence6> "==" <rhs:ExpressionPrecedence5> => Expression::BinaryOp{op: BinaryOp::EQ, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:ExpressionPrecedence6> "!=" <rhs:ExpressionPrecedence5> => Expression::BinaryOp{op: BinaryOp::NE, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:ExpressionPrecedence6> "<" <rhs:ExpressionPrecedence5> => Expression::BinaryOp{op: BinaryOp::LT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    ExpressionPrecedence5
 }
 
-BoolBinaryOperator: Expression = {
-    <lhs:BoolBinaryOperator> "OR" <rhs:AndOperator> => Expression::BinaryOp{op: BinaryOp::Or, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    AndOperator,
-};
-
-AndOperator: Expression = {
-    <lhs:AndOperator> "AND" <rhs:BoolPrimaryOperator> => Expression::BinaryOp{op: BinaryOp::And, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    BoolPrimaryOperator,
-};
-
-
-FactorExpression: Expression = {
-    <lhs:PrimaryExpression> "*" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:PrimaryExpression> "/" <rhs:FactorExpression> => Expression::BinaryOp{op: BinaryOp::Div, lhs: Box::new(lhs), rhs: Box::new(rhs)}, 
-    PrimaryExpression
-};
-
-UnaryOperator: Expression = {
-    "!" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
-    "'" <expression:PrimaryExpression> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
+// ArithmeticExpression
+ExpressionPrecedence5: Expression = {
+    <lhs:ExpressionPrecedence5> "+" <rhs:ExpressionPrecedence4> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:ExpressionPrecedence5> "-" <rhs:ExpressionPrecedence4> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    ExpressionPrecedence4
 }
+
+// FactorExpression
+ExpressionPrecedence4: Expression = {
+    <lhs:ExpressionPrecedence4> "*" <rhs:ExpressionPrecedence3> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <lhs:ExpressionPrecedence4> "/" <rhs:ExpressionPrecedence3> => Expression::BinaryOp{op: BinaryOp::Div, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    ExpressionPrecedence3
+};
+
+ExpressionPrecedence3: Expression = {
+    ExpressionPrecedence2
+}
+
+ExpressionPrecedence2: Expression = {
+    "NOT" <expression:ExpressionPrecedence2> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
+    "'" <expression:ExpressionPrecedence2> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
+    ExpressionPrecedence1
+}
+
+ExpressionPrecedence1: Expression = {
+    LiteralExpression,
+    FunctionCall,
+    Variable,
+    "(" <Expression> ")",
+
+};
+
+LiteralExpression: Expression = {
+    BoolLiteral,
+    IntLiteral,
+    StringLiteral
+};
+
+FunctionCall: Expression = {
+    <function: "IDENTIFIER"> "{" <args: Parameters> "}" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
+}
+
 #[inline]
 Comma<T>: Vec<T> = { // (1)
     <mut v:(<T> ",")*> <e:T?> => match e { // (2)
@@ -139,9 +171,6 @@ Comma<T>: Vec<T> = { // (1)
         }
     }
 };
-
-#[inline]
-Parameters = Comma<Expression>;
 
 #[inline]
 Semicolon<T>: Vec<T> = { // (1)
@@ -157,27 +186,8 @@ Semicolon<T>: Vec<T> = { // (1)
 #[inline]
 Statements = Semicolon<Statement>;
 
-FunctionCall: Expression = {
-    <function: "IDENTIFIER"> "{" <args: Parameters> "}" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
-}
-
-BoolPrimaryOperator: Expression = {
-    <lhs:BoolPrimaryOperator> "==" <rhs:ArithmeticExpression> => Expression::BinaryOp{op: BinaryOp::EQ, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:BoolPrimaryOperator> "!=" <rhs:ArithmeticExpression> => Expression::BinaryOp{op: BinaryOp::NE, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:BoolPrimaryOperator> "<" <rhs:ArithmeticExpression> => Expression::BinaryOp{op: BinaryOp::LT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    ArithmeticExpression
-}
-
-
-PrimaryExpression: Expression = {
-    Bool,
-    IntLiteral,
-    UnaryOperator,
-    FunctionCall,
-    Variable,
-    "(" <Expression> ")",
-
-};
+#[inline]
+Parameters = Comma<Expression>;
 
 Variable: Expression = {
     <name:"IDENTIFIER"> => Expression::Var{name}
@@ -187,16 +197,19 @@ IntLiteral: Expression = {
     <n:"INTEGER_LITERAL"> => Expression::Int{value: n},
 };
 
-Bool: Expression = {
+BoolLiteral: Expression = {
     "TRUE" => Expression::Bool{value: true},
     "FALSE" => Expression::Bool{value: false},
 
-}
+};
+
+StringLiteral: Expression = {
+    <s: "STRING_LITERAL"> => Expression::String{value: s}
+};
 
 Identifier: String = {
     <i: "IDENTIFIER"> => i
 };
-
 
 extern {
     type Location = LexLocation;

@@ -209,7 +209,7 @@ fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, 
                 _ => return Err(format!("Expression '{:?}' is not an address", expr)),
             },
             UnaryOp::Not => {
-                let val = match eval_expression(cmp, *expr.clone()) {
+                match eval_expression(cmp, *expr.clone()) {
                     Ok(value) => match value {
                         Value::Bool { value } => return Ok(Value::Bool { value: !value}),
                         v => return Err(format!("Value '{:?}' is not a boolean", v)),
@@ -217,8 +217,8 @@ fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, 
                     Err(e) => return Err(e),
                 };
             }
-            _ => Err(format!("operator {:?} is unhandled", op)),
         },
         Expression::Bool { value } => Ok(Value::Bool { value }),
+        Expression::String { value } => Ok(Value::String { value }),
     }
 }

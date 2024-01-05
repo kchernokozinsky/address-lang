@@ -4,7 +4,5 @@ x = x + 1
 Print{x}; 
 P{ x < 10 } @start | @end
 
-
-
 end ... 
-Print{x - 20}
+Print{"end"}

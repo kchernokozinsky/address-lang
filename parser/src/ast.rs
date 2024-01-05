@@ -46,6 +46,7 @@ pub enum Statement {
 pub enum Expression {
     Bool{value: bool},
     Int{value: i64},
+    String{value: String},
     Var{name: String},
     Call{function: String, args: Vec<Box<Expression>>},
     UnaryOp{op: UnaryOp, expr: Box<Expression>},
