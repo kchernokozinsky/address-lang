@@ -4,6 +4,7 @@
 pub mod location;
 pub mod token;
 use location::*;
+use queues::*;
 use std::iter::Peekable;
 use std::str::CharIndices;
 use token::*;
@@ -11,20 +12,24 @@ use token::*;
 #[derive(Debug)]
 pub enum LexError {
     Unexpected(Location, char),
+    UnterminatedStringLiteral(Location),
+    FloatFormatError(Location, String),
+    IntegerFormatError(Location, String),
+
 }
 
-pub struct Lexer<'input> {
-    raw_chars: &'input str,
-    chars: Peekable<CharIndices<'input>>,
-    index: usize,
-    current: Option<(usize, char)>,
+pub struct Lexer<'a> {
+    input: &'a str,
+    char_indices: Peekable<CharIndices<'a>>,
+    current_index: usize,
+    current_char: Option<(usize, char)>,
     location: Location,
-    end: bool,
-    skipped_chars: Vec<Option<(usize, char)>>,
+    has_ended: bool,
+    skipped_chars: Queue<Option<(usize, char)>>,
 }
 
-impl<'input> Lexer<'input> {
-    pub fn new(chars: &'input str) -> Self {
+impl<'a> Lexer<'a> {
+    pub fn new(chars: &'a str) -> Self {
         let mut peekable_chars = chars.char_indices().peekable();
 
         let current = peekable_chars.next();
@@ -34,13 +39,13 @@ impl<'input> Lexer<'input> {
         }
 
         Lexer {
-            raw_chars: &chars,
-            chars: peekable_chars,
-            index: 0,
-            current,
+            input: &chars,
+            char_indices: peekable_chars,
+            current_index: 0,
+            current_char: current,
             location,
-            end: false,
-            skipped_chars: vec![],
+            has_ended: false,
+            skipped_chars: queue![],
         }
     }
 
@@ -63,25 +68,21 @@ impl<'input> Lexer<'input> {
     }
 
     fn peek_char(&mut self) -> Option<char> {
-        if let Some((_, c)) = self.current {
-            Some(c)
-        } else {
-            None
-        }
+        self.current_char.map(|(_, c)| c)
     }
 
     fn next_char(&mut self) {
-        let v = if !self.skipped_chars.is_empty() {
-            match self.skipped_chars.pop() {
-                Some(cur) => cur,
-                None => None,
+        let v = if self.skipped_chars.size() != 0 {
+            match self.skipped_chars.remove() {
+                Ok(cur) => cur,
+                _ => None,
             }
         } else {
-            self.chars.next()
+            self.char_indices.next()
         };
         if let Some((i, c)) = v {
-            self.index = i;
-            self.current = Some((i, c));
+            self.current_index = i;
+            self.current_char = Some((i, c));
 
             if c == '\n' {
                 self.location.newline();
@@ -89,24 +90,24 @@ impl<'input> Lexer<'input> {
                 self.location.go_right();
             }
         } else {
-            self.index = self.raw_chars.len();
-            self.current = None;
+            self.current_index = self.input.len();
+            self.current_char = None;
         }
     }
 
     fn move_back(&mut self) {
-        if self.index == 0 {
+        if self.current_index == 0 {
             return;
         }
 
-        self.skipped_chars.push(self.current.clone());
+        self.skipped_chars.add(self.current_char.clone());
         // Retrieve the index and character of the previous position
-        let prev = self.raw_chars[..self.index].char_indices().rev().next();
+        let prev = self.input[..self.current_index].char_indices().rev().next();
 
         if let Some((prev_index, prev_char)) = prev {
             // Update the index and current character to the previous position
-            self.index = prev_index;
-            self.current = Some((prev_index, prev_char));
+            self.current_index = prev_index;
+            self.current_char = Some((prev_index, prev_char));
 
             // Adjust the location accordingly
             if prev_char == '\n' {
@@ -122,7 +123,7 @@ impl<'input> Lexer<'input> {
     }
 
     fn next_keyword_or_identirier_literal(&mut self) -> Span {
-        let start = self.index;
+        let start = self.current_index;
         let start_loc = self.loc();
 
         while let Some(c) = self.peek_char() {
@@ -131,10 +132,10 @@ impl<'input> Lexer<'input> {
             }
             self.next_char();
         }
-        let end = self.index;
+        let end = self.current_index;
         let end_loc = self.loc();
 
-        let t = match &self.raw_chars[start..end] {
+        let t = match &self.input[start..end] {
             "const" => Token::Const,
             "let" => Token::Let,
             "null" => Token::Null,
@@ -153,9 +154,36 @@ impl<'input> Lexer<'input> {
         (start_loc, t, end_loc)
     }
 
-    fn next_int(&mut self) -> Span {
-        let start = self.index;
-        let start_loc = self.loc();
+    fn determine_number(&mut self) -> Result<Span, LexError> {
+        let start = self.current_index;
+        let start_loc = self.location;
+
+        // Consume all digits
+        while let Some(c) = self.peek_char() {
+            if !c.is_ascii_digit() {
+                break;
+            }
+            self.next_char();
+        }
+
+        // Check if the number is potentially a float
+        if self.peek_char() == Some('.') {
+            // If it's a dot, parse as float
+            self.next_float(&self.input[start..self.current_index])
+        } else {
+            // Parse as integer
+            let int_str = &self.input[start..self.current_index];
+            match int_str.parse::<i64>() {
+                Ok(value) => Ok((start_loc, Token::IntegerLiteral(value), self.location)),
+                Err(_) => Err(LexError::IntegerFormatError(start_loc, int_str.to_string())),
+            }
+        }
+    }
+
+    pub fn next_float(&mut self, integral_part: &str) -> Result<Span, LexError> {
+        self.next_char(); // Consume the '.'
+
+        let fractional_start = self.current_index;
 
         while let Some(c) = self.peek_char() {
             if !c.is_ascii_digit() {
@@ -163,36 +191,43 @@ impl<'input> Lexer<'input> {
             }
             self.next_char();
         }
-        let end = self.index;
-        let end_loc = self.loc();
 
-        let raw_int = &self.raw_chars[start..end];
-        let value: i64 = raw_int.parse().unwrap();
-        let t = Token::IntegerLiteral(value);
+        let fractional_part = &self.input[fractional_start..self.current_index];
+        let float_str = format!("{}.{}", integral_part, fractional_part);
 
-        (start_loc, t, end_loc)
+        match float_str.parse::<f64>() {
+            Ok(value) => Ok((self.location, Token::FloatLiteral(value), self.location)),
+            Err(_) => Err(LexError::FloatFormatError(self.location, float_str)),
+        }
     }
 
-    fn next_quoted_str_literal(&mut self) -> Span {
-        let start = self.index;
+    fn next_quoted_str_literal(&mut self) -> Result<Span, LexError> {
+        let start = self.current_index;
         let start_loc = self.loc();
 
         self.next_char();
 
-        while let Some(c) = self.peek_char() {
+        loop {
+            let c = if let Some(c) = self.peek_char() {
+                c
+            } else {
+                return Err(LexError::UnterminatedStringLiteral(self.location));
+            };
             self.next_char();
             if c == '\"' {
                 break;
             }
+
         }
-        let end = self.index;
+
+        let end = self.current_index;
         let end_loc = self.loc();
 
-        let id = &self.raw_chars[(start + 1)..(end - 1)];
+        let id = &self.input[(start + 1)..(end - 1)];
 
         let t = Token::StringLiteral(id.to_string());
 
-        (start_loc, t, end_loc)
+        Ok((start_loc, t, end_loc))
     }
 
     fn next_symbol_token(&mut self, c: char) -> Option<Span> {
@@ -240,17 +275,17 @@ impl<'input> Lexer<'input> {
                 let c: char = if let Some(c) = self.peek_char() {
                     c
                 } else {
-                    // если закончились символы то вернуть двух символьный токен
+                    // if out of characters, return a two-character token
                     return Some((start_loc, t, self.loc()));
                 };
 
                 match match_tripple_symbol_token(a, b, c) {
                     Some(token) => {
-                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        // if it is a three-character token but return it and increase the index by 1
                         self.next_char();
                         return Some((start_loc, token, self.loc()));
                     }
-                    // иначе вернуть двух символьный токен
+                    //otherwise return a two-character token
                     None => return Some((start_loc, t, self.loc())),
                 }
             }
@@ -258,17 +293,17 @@ impl<'input> Lexer<'input> {
                 let c: char = if let Some(c) = self.peek_char() {
                     c
                 } else {
-                    // если закончились символы то вернуть двух символьный токен
+                    // if out of characters, return a None
                     return None;
                 };
 
                 match match_tripple_symbol_token(a, b, c) {
                     Some(token) => {
-                        // если это трехсимвольный токен но вернуть его и увеличить индекс на 1
+                        // if it is a three-character token but return it and increase the index by 1
                         self.next_char();
                         return Some((start_loc, token, self.loc()));
                     }
-                    // иначе вернуть двух символьный токен
+                    // otherwise return a two-character token
                     None => return None,
                 }
             }
@@ -326,17 +361,17 @@ impl<'input> Lexer<'input> {
 
 pub type Span = (Location, Token, Location);
 
-impl<'input> Iterator for Lexer<'input> {
+impl<'a> Iterator for Lexer<'a> {
     type Item = Result<Span, LexError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace_and_comments();
 
-        // Return None if no characters left, handling the end of input
+        // Return None if no characters left, handling the end of a
         let c = match self.peek_char() {
             None => {
-                if !self.end {
-                    self.end = true;
+                if !self.has_ended {
+                    self.has_ended = true;
                     return Some(Ok((self.loc(), Token::EndOfFile, self.loc())));
                 } else {
                     return None;
@@ -346,21 +381,17 @@ impl<'input> Iterator for Lexer<'input> {
         };
 
         // Processing next token based on the current character
-        Some(
-            if c.is_ascii_alphabetic() {
-                Ok(self.next_keyword_or_identirier_literal())
-            } else if c.is_ascii_digit() {
-                Ok(self.next_int())
-            } else if c == '"' {
-                Ok(self.next_quoted_str_literal())
-            } else {
-                // Process symbol or return an error
-                self.next_symbol_token(c).map_or_else(
-                    || Err(LexError::Unexpected(self.loc(), c)),
-                    Ok,
-                )
-            },
-        )
+        Some(if c.is_ascii_alphabetic() {
+            Ok(self.next_keyword_or_identirier_literal())
+        } else if c.is_ascii_digit() {
+            self.determine_number()
+        } else if c == '"' {
+            self.next_quoted_str_literal()
+        } else {
+            // Process symbol or return an error
+            self.next_symbol_token(c)
+                .map_or_else(|| Err(LexError::Unexpected(self.loc(), c)), Ok)
+        })
     }
 }
 

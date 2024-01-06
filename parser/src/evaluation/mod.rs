@@ -220,5 +220,6 @@ fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, 
         },
         Expression::Bool { value } => Ok(Value::Bool { value }),
         Expression::String { value } => Ok(Value::String { value }),
+        Expression::Float { value } => Ok(Value::Float { value }),
     }
 }

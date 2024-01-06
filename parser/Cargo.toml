@@ -9,5 +9,5 @@ description = "The parser for the address programming language"
 lalrpop = "0.20.0"
 
 [dependencies]
+queues = "1.0.2"
 lalrpop-util = {version = "0.20.0", features = ["lexer"]}
-rand = "0.8.5"

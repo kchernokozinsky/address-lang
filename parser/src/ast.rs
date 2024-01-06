@@ -44,6 +44,7 @@ pub enum Statement {
 
 #[derive(Clone,Debug)]
 pub enum Expression {
+    Float {value: f64},
     Bool{value: bool},
     Int{value: i64},
     String{value: String},

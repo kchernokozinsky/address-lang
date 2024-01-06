@@ -154,7 +154,8 @@ ExpressionPrecedence1: Expression = {
 LiteralExpression: Expression = {
     BoolLiteral,
     IntLiteral,
-    StringLiteral
+    StringLiteral,
+    FloatLiteral
 };
 
 FunctionCall: Expression = {
@@ -196,6 +197,10 @@ Variable: Expression = {
 IntLiteral: Expression = {
     <n:"INTEGER_LITERAL"> => Expression::Int{value: n},
 };
+
+FloatLiteral: Expression = {
+    <n:"FLOAT_LITERAL"> => Expression::Float{value: n},
+}
 
 BoolLiteral: Expression = {
     "TRUE" => Expression::Bool{value: true},

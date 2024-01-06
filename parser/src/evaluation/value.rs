@@ -3,6 +3,9 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Null,
+    Float {
+        value: f64
+    },
     String {
         value: String,
     },
@@ -54,6 +57,7 @@ impl fmt::Display for Value {
             Value::Int { value } => write!(f, "Integer: {}", value),
             Value::Function { .. } => write!(f, "Function"),
             Value::String { value } => write!(f, "String: {}", value),
+            Value::Float { value } => write!(f, "Float: {}", value),
         }
     }
 }
