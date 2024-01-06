@@ -2,8 +2,10 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 pub mod location;
+pub mod matcher;
 pub mod token;
 use location::*;
+use matcher::*;
 use queues::*;
 use std::iter::Peekable;
 use std::str::CharIndices;
@@ -15,7 +17,6 @@ pub enum LexError {
     UnterminatedStringLiteral(Location),
     FloatFormatError(Location, String),
     IntegerFormatError(Location, String),
-
 }
 
 pub struct Lexer<'a> {
@@ -217,7 +218,6 @@ impl<'a> Lexer<'a> {
             if c == '\"' {
                 break;
             }
-
         }
 
         let end = self.current_index;
@@ -392,53 +392,5 @@ impl<'a> Iterator for Lexer<'a> {
             self.next_symbol_token(c)
                 .map_or_else(|| Err(LexError::Unexpected(self.loc(), c)), Ok)
         })
-    }
-}
-
-fn match_single_symbol_token(c: char) -> Option<Token> {
-    match c {
-        '!' => Some(Token::Bang),
-        '}' => Some(Token::RightCurlyBrace),
-        '{' => Some(Token::LeftCurlyBrace),
-        ']' => Some(Token::RightSquareBracket),
-        '[' => Some(Token::LeftSquareBracket),
-        ':' => Some(Token::Colon),
-        ',' => Some(Token::Comma),
-        '/' => Some(Token::Slash),
-        '.' => Some(Token::Dot),
-        '=' => Some(Token::Equal),
-        '>' => Some(Token::GreaterThan),
-        '<' => Some(Token::LessThan),
-        '%' => Some(Token::Percent),
-        '*' => Some(Token::Multiply),
-        ')' => Some(Token::RightParenthesis),
-        '(' => Some(Token::LeftParenthesis),
-        ';' => Some(Token::Semicolon),
-        '-' => Some(Token::Minus),
-        '+' => Some(Token::Plus),
-        '\'' => Some(Token::Apostrophe),
-        '\n' => Some(Token::NewLine),
-        '|' => Some(Token::VerticalBar),
-        '@' => Some(Token::At),
-        _ => None,
-    }
-}
-
-fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
-    match (a, b) {
-        ('!', '=') => Some(Token::NotEqual),
-        ('=', '>') => Some(Token::Send),
-        ('=', '=') => Some(Token::EqualEqual),
-        ('>', '=') => Some(Token::GreaterThanEqual),
-        ('<', '=') => Some(Token::LessThanEqual),
-        _ => None,
-    }
-}
-
-fn match_tripple_symbol_token(a: char, b: char, c: char) -> Option<Token> {
-    match (a, b, c) {
-        ('.', '.', '.') => Some(Token::Ellipsis),
-        ('<', '=', '>') => Some(Token::Exchange),
-        _ => None,
     }
 }

@@ -110,7 +110,7 @@ impl fmt::Display for Token {
             And => f.write_str("and"),
             Del => f.write_str("del"),
             Loop => f.write_str("loop"),
-            Replace => f.write_str("Replace"),
+            Replace => f.write_str("replace"),
             Predicate => f.write_str("predicate"), 
             Not => f.write_str("not"),
             Or => f.write_str("or"),
