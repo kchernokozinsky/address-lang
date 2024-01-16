@@ -9,36 +9,16 @@ pub Algorithm: Algorithm = {
 };
 
 pub FileLine: FileLine = {
-        FormulaLine,
-        CommonLine
-};
-
-pub FormulaLine: FileLine = {
-         <labels: LabelsDeclaration?> <statement:OneLineStatement> "END_OF_FILE"=> { 
+         <labels: LabelsDeclaration?> <statements:Statements> "END_OF_FILE"=> { 
         match labels {
-                        Some(labels) => FileLine::FormulaLine{labels, statement},
-                        None => FileLine::FormulaLine{labels: vec![], statement}
+                        Some(labels) => FileLine::Line{labels, statements: statements},
+                        None => FileLine::Line{labels: vec![], statements: statements}
                     }
                 },
-        <labels: LabelsDeclaration?> <statement:OneLineStatement> "NEW_LINE"=> { 
-        match labels {
-                        Some(labels) => FileLine::FormulaLine{labels, statement},
-                        None => FileLine::FormulaLine{labels: vec![], statement}
-                    }
-                },
-}
-
-pub CommonLine: FileLine = {
         <labels: LabelsDeclaration?> <statements:Statements> "NEW_LINE"=> { 
         match labels {
-                        Some(labels) => FileLine::Line{labels, statements},
-                        None => FileLine::Line{labels: vec![], statements}
-                    }
-                },
-    <labels: LabelsDeclaration?> <statements:Statements> "END_OF_FILE"=> { 
-        match labels {
-                        Some(labels) => FileLine::Line{labels, statements},
-                        None => FileLine::Line{labels: vec![], statements}
+                        Some(labels) => FileLine::Line{labels, statements: statements},
+                        None => FileLine::Line{labels: vec![], statements: statements}
                     }
                 },
 };
@@ -59,17 +39,19 @@ Labels: Vec<String> = { // (1)
 };
 
 pub OneLineStatement: OneLineStatement = {
+    UnconditionalJump,
     Loop,
     Predicate,
-    "!"                     => OneLineStatement::Exit,
+    "!" => OneLineStatement::Exit
+    
 };
 
 pub Predicate: OneLineStatement = {
     "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statements> "|" <r:Statements> => {
         OneLineStatement::Predicate{
             condition
-          , if_true: l
-          , if_false: r}
+          , if_true: Box::new(l)
+          , if_false: Box::new(r)}
         }
 };
 
@@ -82,16 +64,15 @@ pub Loop: OneLineStatement = {
       label_to: betta }
 };
 
-pub UnconditionalJump: Statement = {
-    "@" <label: Identifier> => Statement::UnconditionalJump{label},
+pub UnconditionalJump: OneLineStatement = {
+    "@" <label: Identifier> => OneLineStatement::UnconditionalJump{label},
 };
 
-pub Statement: Statement = {
-    UnconditionalJump,
-    <lhs:Expression> "=" <rhs:Expression> => Statement::Assign{lhs, rhs},
-    <lhs:Expression> "<=>" <rhs:Expression> => Statement::Exchange{lhs, rhs},
-    <lhs:Expression> "=>" <rhs:Expression> => Statement::Send{lhs: rhs,rhs: lhs},
-    <expression: Expression> => Statement::Expression{expression},
+pub SimpleStatement: SimpleStatement = {
+    <lhs:Expression> "=" <rhs:Expression> => SimpleStatement::Assign{lhs, rhs},
+    <lhs:Expression> "<=>" <rhs:Expression> => SimpleStatement::Exchange{lhs, rhs},
+    <lhs:Expression> "=>" <rhs:Expression> => SimpleStatement::Send{lhs: rhs,rhs: lhs},
+    <expression: Expression> => SimpleStatement::Expression{expression},
     };
 
 
@@ -181,9 +162,14 @@ Semicolon<T>: Vec<T> = { // (1)
         }
     }
 };
+#[inline]
+Statements: Statements = {
+    <statements: Semicolon<SimpleStatement>> => Statements::SimpleStatements(statements),
+    <statement:OneLineStatement> => Statements::OneLineStatement(statement)
+};
 
 #[inline]
-Statements = Semicolon<Statement>;
+SimpleStatements = Semicolon<SimpleStatement>;
 
 #[inline]
 Parameters = Comma<Expression>;

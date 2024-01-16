@@ -9,6 +9,7 @@ pub struct Compiler {
     lines: Vec<FileLine>,
     env: Environment,
     current: usize,
+    to_stop: bool,
 }
 
 impl Compiler {
@@ -17,6 +18,7 @@ impl Compiler {
             lines,
             env,
             current: 0,
+            to_stop: false,
         };
         compiler.extract_labels();
         compiler
@@ -35,6 +37,10 @@ impl Compiler {
         }
     }
 
+    pub fn stop_eval(&mut self) {
+        self.to_stop = true
+    }
+
     pub fn eval(&mut self) -> Result<(), String> {
         eval_algorithm(self)
     }
@@ -42,16 +48,20 @@ impl Compiler {
 
 fn eval_algorithm(cmp: &mut Compiler) -> Result<(), String> {
     loop {
-        let cur = cmp.current;
-        let line: FileLine = cmp.lines[cur].clone();
+        if cmp.to_stop {
+            return Ok(());
+        } else {
+            let cur = cmp.current;
+            let line: FileLine = cmp.lines[cur].clone();
 
-        if let Err(e) = eval_file_line(cmp, line) {
-            return Err(e);
-        }
-        if cur == cmp.current {
-            cmp.current += 1;
-            if cmp.current >= cmp.lines.len() {
-                break;
+            if let Err(e) = eval_file_line(cmp, line) {
+                return Err(e);
+            }
+            if cur == cmp.current {
+                cmp.current += 1;
+                if cmp.current >= cmp.lines.len() {
+                    break;
+                }
             }
         }
     }
@@ -64,17 +74,22 @@ fn eval_file_line(cmp: &mut Compiler, line: FileLine) -> Result<(), String> {
             labels: _s,
             statements,
         } => {
-            for statement in statements {
+            eval_statements(cmp, statements)
+        }
+    }
+}
+
+pub fn eval_statements(cmp: &mut Compiler, statements: Statements) -> Result<(), String> {
+    match statements {
+        Statements::OneLineStatement(stmnt) => eval_one_line_statement(cmp, stmnt),
+        Statements::SimpleStatements(stmnts) => {
+            for statement in stmnts {
                 if let Err(e) = eval_statement(cmp, statement) {
                     return Err(e);
                 }
             }
             Ok(())
-        },
-        FileLine::FormulaLine {
-            labels: _,
-            statement,
-        } => eval_one_line_statement(cmp, statement),
+        }
     }
 }
 fn eval_one_line_statement(cmp: &mut Compiler, statement: OneLineStatement) -> Result<(), String> {
@@ -99,28 +114,30 @@ fn eval_one_line_statement(cmp: &mut Compiler, statement: OneLineStatement) -> R
                 Err(e) => return Err(e),
             };
             if cond {
-                for statement in if_true {
-                    if let Err(e) = eval_statement(cmp, statement) {
-                        return Err(e);
-                    }
-                }
-                Ok(())
+                eval_statements(cmp, *if_true)
             } else {
-                for statement in if_false {
-                    if let Err(e) = eval_statement(cmp, statement) {
-                        return Err(e);
-                    }
-                }
-                Ok(())
+                eval_statements(cmp, *if_false)
             }
         }
-        OneLineStatement::Exit => todo!(),
+        OneLineStatement::Exit => Ok(cmp.stop_eval()),
+        OneLineStatement::UnconditionalJump { label } => match cmp.env.get_line_by_label(&label) {
+            Some(line) => {
+                cmp.current = line.clone();
+                Ok(())
+            }
+            None => {
+                return Err(format!(
+                    "You tried to jump to '{:?}' which is not declared",
+                    label
+                ))
+            }
+        },
     }
 }
 
-fn eval_statement(cmp: &mut Compiler, statement: Statement) -> Result<(), String> {
+fn eval_statement(cmp: &mut Compiler, statement: SimpleStatement) -> Result<(), String> {
     match statement {
-        Statement::Expression { expression } => {
+        SimpleStatement::Expression { expression } => {
             if let Err(e) = eval_expression(cmp, expression) {
                 return Err(e);
             }
@@ -128,7 +145,7 @@ fn eval_statement(cmp: &mut Compiler, statement: Statement) -> Result<(), String
             Ok(())
         }
 
-        Statement::Assign { lhs, rhs } => {
+        SimpleStatement::Assign { lhs, rhs } => {
             let r = match eval_expression(cmp, rhs.clone()) {
                 Ok(v) => v,
                 Err(e) => return Err(e),
@@ -180,20 +197,9 @@ fn eval_statement(cmp: &mut Compiler, statement: Statement) -> Result<(), String
             }
         }
 
-        Statement::UnconditionalJump { label } => match cmp.env.get_line_by_label(&label) {
-            Some(line) => {
-                cmp.current = line.clone();
-                Ok(())
-            }
-            None => {
-                return Err(format!(
-                    "You tried to jump to '{:?}' which is not declared",
-                    label
-                ))
-            }
-        },
+        
 
-        Statement::Send { lhs, rhs } => {
+        SimpleStatement::Send { lhs, rhs } => {
             let address = match eval_expression(cmp, lhs.clone()) {
                 Ok(Value::Int { value }) => value,
                 _ => return Err(format!("Expression '{:?}' is not an address", rhs)),
