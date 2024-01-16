@@ -97,9 +97,9 @@ impl<'a> Lexer<'a> {
 
         let _ = self.skipped_chars.add(self.current_char.clone());
         // Retrieve the index and character of the previous position
-        let prev = self.input[..self.current_index].char_indices().rev().next();
+        let prev = self.skipped_chars.peek();
 
-        if let Some((prev_index, prev_char)) = prev {
+        if let Ok(Some((prev_index, prev_char))) = prev {
             // Update the index and current character to the previous position
             self.current_index = prev_index;
             self.current_char = Some((prev_index, prev_char));
