@@ -7,6 +7,7 @@ pub mod token;
 use location::*;
 use matcher::*;
 use queues::*;
+use core::prelude;
 use std::iter::Peekable;
 use std::str::CharIndices;
 use token::*;
@@ -97,13 +98,15 @@ impl<'a> Lexer<'a> {
 
         let _ = self.skipped_chars.add(self.current_char.clone());
         // Retrieve the index and character of the previous position
-        let prev = self.skipped_chars.peek();
 
-        if let Ok(Some((prev_index, prev_char))) = prev {
+        let prev =  self.input[..self.current_index].char_indices().rev().next();
+        if let Some((prev_index, prev_char)) = prev {
             // Update the index and current character to the previous position
             self.current_index = prev_index;
             self.current_char = Some((prev_index, prev_char));
+        };
 
+        if let Ok(Some((.., prev_char))) = self.skipped_chars.peek() {
             // Adjust the location accordingly
             if prev_char == '\n' {
                 self.location.move_back_newline();
