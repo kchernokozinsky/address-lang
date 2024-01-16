@@ -10,14 +10,8 @@ use queues::*;
 use std::iter::Peekable;
 use std::str::CharIndices;
 use token::*;
+use crate::errors::*;
 
-#[derive(Debug)]
-pub enum LexError {
-    Unexpected(Location, char),
-    UnterminatedStringLiteral(Location),
-    FloatFormatError(Location, String),
-    IntegerFormatError(Location, String),
-}
 
 pub struct Lexer<'a> {
     input: &'a str,
@@ -101,7 +95,7 @@ impl<'a> Lexer<'a> {
             return;
         }
 
-        self.skipped_chars.add(self.current_char.clone());
+        let _ = self.skipped_chars.add(self.current_char.clone());
         // Retrieve the index and character of the previous position
         let prev = self.input[..self.current_index].char_indices().rev().next();
 

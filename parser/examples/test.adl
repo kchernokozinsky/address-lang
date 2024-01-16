@@ -1,8 +1,8 @@
 x = 5
 start ... 
 x = x + 1
-Print{x}; 
-P{ x < 10.543 } @start | @end
+Print{x, x < 10}; 
+P{ 10 } @start | @end
 
 end ... 
 Print{"end"}

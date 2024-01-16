@@ -13,7 +13,11 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new(lines: Vec<FileLine>, env: Environment) -> Compiler {
-        let mut compiler = Compiler { lines, env, current: 0 };
+        let mut compiler = Compiler {
+            lines,
+            env,
+            current: 0,
+        };
         compiler.extract_labels();
         compiler
     }
@@ -24,15 +28,14 @@ impl Compiler {
 
     fn extract_labels(&mut self) {
         for (index, line) in self.lines.iter().enumerate() {
-            let labels = line.labels(); 
-                for label in labels {
-                    self.env.add_label(label.to_string(), index);
-                }
-            
+            let labels = line.labels();
+            for label in labels {
+                self.env.add_label(label.to_string(), index);
+            }
         }
     }
 
-    pub fn compile(&mut self) -> Result<(), String> {
+    pub fn eval(&mut self) -> Result<(), String> {
         eval_algorithm(self)
     }
 }
@@ -67,11 +70,51 @@ fn eval_file_line(cmp: &mut Compiler, line: FileLine) -> Result<(), String> {
                 }
             }
             Ok(())
-        }
+        },
         FileLine::FormulaLine {
             labels: _,
-            statement: _,
+            statement,
+        } => eval_one_line_statement(cmp, statement),
+    }
+}
+fn eval_one_line_statement(cmp: &mut Compiler, statement: OneLineStatement) -> Result<(), String> {
+    match statement {
+        OneLineStatement::Loop {
+            initial_value,
+            step,
+            last_value,
+            label_until,
+            label_to,
         } => Ok(()),
+        OneLineStatement::Predicate {
+            condition,
+            if_true,
+            if_false,
+        } => {
+            let cond = match eval_expression(cmp, condition) {
+                Ok(value) => match value {
+                    Value::Bool { value } => value,
+                    v => return Err(format!("Value '{:?}' is not a boolean", v)),
+                },
+                Err(e) => return Err(e),
+            };
+            if cond {
+                for statement in if_true {
+                    if let Err(e) = eval_statement(cmp, statement) {
+                        return Err(e);
+                    }
+                }
+                Ok(())
+            } else {
+                for statement in if_false {
+                    if let Err(e) = eval_statement(cmp, statement) {
+                        return Err(e);
+                    }
+                }
+                Ok(())
+            }
+        }
+        OneLineStatement::Exit => todo!(),
     }
 }
 
@@ -86,12 +129,55 @@ fn eval_statement(cmp: &mut Compiler, statement: Statement) -> Result<(), String
         }
 
         Statement::Assign { lhs, rhs } => {
-            let address = match eval_expression(cmp, rhs.clone()) {
-                Ok(Value::Int { value }) => value,
-                _ => return Err(format!("Expression '{:?}' is not an address", rhs)),
+            let r = match eval_expression(cmp, rhs.clone()) {
+                Ok(v) => v,
+                Err(e) => return Err(e),
+            };
+            let l = match lhs.clone() {
+                Expression::Null => todo!(),
+                Expression::Float { .. } => {
+                    return Err(format!(
+                        "Expression '{:?}' is not an address or variable",
+                        lhs
+                    ))
+                }
+                Expression::Bool { .. } => {
+                    return Err(format!(
+                        "Expression '{:?}' is not an address or variable",
+                        lhs
+                    ))
+                }
+                Expression::Int { .. } => eval_expression(cmp, lhs.clone())?,
+                Expression::String { .. } => {
+                    return Err(format!(
+                        "Expression '{:?}' is not an address or variable",
+                        lhs
+                    ))
+                }
+                Expression::Var { .. } => {
+                    if let Value::Int { value } = r {
+                        return bind(cmp, &lhs, value);
+                    } else {
+                        return Err(format!("Expression '{:?}' is not an address", rhs));
+                    }
+                }
+                Expression::Call { .. } => eval_expression(cmp, lhs.clone())?,
+                Expression::UnaryOp { op, expr } => match op {
+                    UnaryOp::Dereference => eval_expression(cmp, *expr)?,
+                    UnaryOp::Not => eval_expression(cmp, lhs.clone())?,
+                },
+                Expression::BinaryOp { .. } => eval_expression(cmp, lhs.clone())?,
             };
 
-            bind(cmp, &lhs, address)
+            match l {
+                Value::Int { value } => Ok(cmp.env.fill_address(value, r)),
+                _ => {
+                    return Err(format!(
+                        "Expression '{:?}' is not an address or variable",
+                        l
+                    ))
+                }
+            }
         }
 
         Statement::UnconditionalJump { label } => match cmp.env.get_line_by_label(&label) {
@@ -106,25 +192,6 @@ fn eval_statement(cmp: &mut Compiler, statement: Statement) -> Result<(), String
                 ))
             }
         },
-
-        Statement::Predicate {
-            condition,
-            if_true,
-            if_false,
-        } => {
-            let cond = match eval_expression(cmp, condition) {
-                Ok(value) => match value {
-                    Value::Bool { value } => value,
-                    v => return Err(format!("Value '{:?}' is not a boolean", v)),
-                },
-                Err(e) => return Err(e),
-            };
-            if cond {
-                eval_statement(cmp, *if_true)
-            } else {
-                eval_statement(cmp, *if_false)
-            }
-        }
 
         Statement::Send { lhs, rhs } => {
             let address = match eval_expression(cmp, lhs.clone()) {
@@ -152,7 +219,6 @@ fn bind(cmp: &mut Compiler, lhs: &Expression, address: i64) -> Result<(), String
 }
 
 fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, String> {
-
     match expression {
         Expression::Int { value } => Ok(Value::Int { value }),
         Expression::Call { function, args } => {
@@ -211,7 +277,7 @@ fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, 
             UnaryOp::Not => {
                 match eval_expression(cmp, *expr.clone()) {
                     Ok(value) => match value {
-                        Value::Bool { value } => return Ok(Value::Bool { value: !value}),
+                        Value::Bool { value } => return Ok(Value::Bool { value: !value }),
                         v => return Err(format!("Value '{:?}' is not a boolean", v)),
                     },
                     Err(e) => return Err(e),
@@ -221,5 +287,6 @@ fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, 
         Expression::Bool { value } => Ok(Value::Bool { value }),
         Expression::String { value } => Ok(Value::String { value }),
         Expression::Float { value } => Ok(Value::Float { value }),
+        Expression::Null => Ok(Value::Null),
     }
 }

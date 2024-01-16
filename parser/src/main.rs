@@ -1,5 +1,6 @@
 pub mod ast;
 
+pub mod errors;
 pub mod evaluation;
 pub mod lexer;
 use std::fs;
@@ -29,15 +30,15 @@ fn main() {
     let lines = match ast {
         Algorithm::Body { lines } => lines,
     };
-    // println!("{:?}", ast);
+    // // println!("{:?}", ast);
     let mut  compiler = Compiler::new(lines, env);
-    let result = compiler.compile();
+    let result = compiler.eval();
     println!("{:?}", result);
 }
 
 fn read_test() -> String {
     // let f = File::open("examples/test.adl").unwrap();
-    let f = "examples/test.adl";
+    let f = "examples/sum_test.adl";
     // let mut lines = BufReader::new(f).lines();
     // let mut test = String::new();
 

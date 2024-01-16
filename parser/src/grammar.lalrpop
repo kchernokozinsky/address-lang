@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::lexer::LexError;
+use crate::errors::LexError;
 use crate::lexer::location::Location as LexLocation;
 use crate::lexer::token::Token;
 grammar;
@@ -43,7 +43,6 @@ pub CommonLine: FileLine = {
                 },
 };
 
-
 pub LabelsDeclaration: Vec<String> = {
     <labels: Labels> "..." => labels
 };
@@ -60,16 +59,17 @@ Labels: Vec<String> = { // (1)
 };
 
 pub OneLineStatement: OneLineStatement = {
-    Loop
+    Loop,
+    Predicate,
+    "!"                     => OneLineStatement::Exit,
 };
 
-
-pub Predicate: Statement = {
-    "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statement> "|" <r:Statement> => {
-        Statement::Predicate{
+pub Predicate: OneLineStatement = {
+    "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statements> "|" <r:Statements> => {
+        OneLineStatement::Predicate{
             condition
-          , if_true: Box::new(l)
-          , if_false: Box::new(r)}
+          , if_true: l
+          , if_false: r}
         }
 };
 
@@ -78,7 +78,7 @@ pub Loop: OneLineStatement = {
         initial_value: a
       , step: b
       , last_value: c
-      , label_unitl: alpha, 
+      , label_until: alpha, 
       label_to: betta }
 };
 
@@ -87,15 +87,12 @@ pub UnconditionalJump: Statement = {
 };
 
 pub Statement: Statement = {
-    Predicate,
     UnconditionalJump,
     <lhs:Expression> "=" <rhs:Expression> => Statement::Assign{lhs, rhs},
     <lhs:Expression> "<=>" <rhs:Expression> => Statement::Exchange{lhs, rhs},
     <lhs:Expression> "=>" <rhs:Expression> => Statement::Send{lhs: rhs,rhs: lhs},
-    "!"                     => Statement::Exit,
     <expression: Expression> => Statement::Expression{expression},
     };
-
 
 
 pub Expression: Expression = {
@@ -155,7 +152,8 @@ LiteralExpression: Expression = {
     BoolLiteral,
     IntLiteral,
     StringLiteral,
-    FloatLiteral
+    FloatLiteral,
+    NullLiteral
 };
 
 FunctionCall: Expression = {
@@ -193,6 +191,11 @@ Parameters = Comma<Expression>;
 Variable: Expression = {
     <name:"IDENTIFIER"> => Expression::Var{name}
 }
+
+NullLiteral: Expression = {
+    <n:"NULL"> => Expression::Null,
+};
+
 
 IntLiteral: Expression = {
     <n:"INTEGER_LITERAL"> => Expression::Int{value: n},

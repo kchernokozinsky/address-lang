@@ -20,14 +20,10 @@ impl FileLine {
 }
 
 #[derive(Clone,Debug)]
-pub enum DeclarationType {
-    Const,
-    Var,
-}
-
-#[derive(Clone,Debug)]
 pub enum OneLineStatement {
-    Loop{initial_value: Expression, step: Expression, last_value: Expression, label_unitl: String, label_to: String}
+    Loop{initial_value: Expression, step: Expression, last_value: Expression, label_until: String, label_to: String},
+    Predicate{condition: Expression, if_true: Vec<Statement>, if_false: Vec<Statement>},
+    Exit
 }
 
 #[derive(Clone,Debug)]
@@ -37,13 +33,12 @@ pub enum Statement {
     Exchange{lhs: Expression, rhs: Expression},
     Expression{expression: Expression},
     UnconditionalJump{label: String},
-    Predicate{condition: Expression, if_true: Box<Statement>, if_false: Box<Statement>},
-    Exit
     
 }
 
 #[derive(Clone,Debug)]
 pub enum Expression {
+    Null,
     Float {value: f64},
     Bool{value: bool},
     Int{value: i64},
