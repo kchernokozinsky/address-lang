@@ -46,3 +46,54 @@ pub fn match_tripple_symbol_token(a: char, b: char, c: char) -> Option<Token> {
         _ => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_match_single_symbol_token() {
+        assert_eq!(match_single_symbol_token('!'), Some(Token::Bang));
+        assert_eq!(match_single_symbol_token('}'), Some(Token::RightCurlyBrace));
+        assert_eq!(match_single_symbol_token('{'), Some(Token::LeftCurlyBrace));
+        // ... test all other single symbols ...
+        assert_eq!(match_single_symbol_token(')'), Some(Token::RightParenthesis));
+        assert_eq!(match_single_symbol_token('('), Some(Token::LeftParenthesis));
+        assert_eq!(match_single_symbol_token('\''), Some(Token::Apostrophe));
+        assert_eq!(match_single_symbol_token('\n'), Some(Token::NewLine));
+        assert_eq!(match_single_symbol_token('|'), Some(Token::VerticalBar));
+        assert_eq!(match_single_symbol_token('@'), Some(Token::At));
+
+        // Test for characters not in the match list
+        assert_eq!(match_single_symbol_token('a'), None);
+        assert_eq!(match_single_symbol_token('1'), None);
+        assert_eq!(match_single_symbol_token(' '), None);
+    }
+
+    #[test]
+fn test_match_double_symbol_token() {
+    assert_eq!(match_double_symbol_token('!', '='), Some(Token::NotEqual));
+    assert_eq!(match_double_symbol_token('=', '>'), Some(Token::Send));
+    assert_eq!(match_double_symbol_token('=', '='), Some(Token::EqualEqual));
+    assert_eq!(match_double_symbol_token('>', '='), Some(Token::GreaterThanEqual));
+    assert_eq!(match_double_symbol_token('<', '='), Some(Token::LessThanEqual));
+
+    // Test for character pairs not in the match list
+    assert_eq!(match_double_symbol_token('a', 'b'), None);
+    assert_eq!(match_double_symbol_token('>', '>'), None);
+    assert_eq!(match_double_symbol_token('=', '<'), None);
+}
+
+#[test]
+fn test_match_tripple_symbol_token() {
+    assert_eq!(match_tripple_symbol_token('.', '.', '.'), Some(Token::Ellipsis));
+    assert_eq!(match_tripple_symbol_token('<', '=', '>'), Some(Token::Exchange));
+
+    // Test for character triples not in the match list
+    assert_eq!(match_tripple_symbol_token('a', 'b', 'c'), None);
+    assert_eq!(match_tripple_symbol_token('=', '=', '='), None);
+    assert_eq!(match_tripple_symbol_token('<', '<', '<'), None);
+}
+
+
+}

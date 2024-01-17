@@ -3,12 +3,18 @@
 use std::fmt;
 
 /// A location somewhere in the sourcecode.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Eq)]
 pub struct Location {
     row: usize,
     column: usize,
     previos_column: usize,
+}
 
+impl PartialEq for Location {
+    fn eq(&self, other: &Self) -> bool {
+        self.row == other.row && 
+        self.column == other.column
+    }
 }
 
 impl fmt::Debug for Location {

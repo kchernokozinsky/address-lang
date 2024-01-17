@@ -1,13 +1,9 @@
-// Copyright 2022 Sean Kelleher. All rights reserved.
-// Use of this source code is governed by an MIT
-// licence that can be found in the LICENCE file.
 pub mod location;
 pub mod matcher;
 pub mod token;
 use location::*;
 use matcher::*;
 use queues::*;
-use core::prelude;
 use std::iter::Peekable;
 use std::str::CharIndices;
 use token::*;
@@ -99,14 +95,7 @@ impl<'a> Lexer<'a> {
         let _ = self.skipped_chars.add(self.current_char.clone());
         // Retrieve the index and character of the previous position
 
-        let prev =  self.input[..self.current_index].char_indices().rev().next();
-        if let Some((prev_index, prev_char)) = prev {
-            // Update the index and current character to the previous position
-            self.current_index = prev_index;
-            self.current_char = Some((prev_index, prev_char));
-        };
-
-        if let Ok(Some((.., prev_char))) = self.skipped_chars.peek() {
+        if let Some((.., prev_char)) = self.current_char.clone() {
             // Adjust the location accordingly
             if prev_char == '\n' {
                 self.location.move_back_newline();
@@ -114,6 +103,14 @@ impl<'a> Lexer<'a> {
                 self.location.go_left();
             }
         }
+
+        let prev: Option<(usize, char)> =  self.input[..self.current_index].char_indices().rev().next();
+        if let Some((prev_index, prev_char)) = prev {
+            // Update the index and current character to the previous position
+            self.current_index = prev_index;
+            self.current_char = Some((prev_index, prev_char));
+        };
+
     }
 
     fn loc(&mut self) -> Location {
@@ -167,18 +164,21 @@ impl<'a> Lexer<'a> {
         // Check if the number is potentially a float
         if self.peek_char() == Some('.') {
             // If it's a dot, parse as float
-            self.next_float(&self.input[start..self.current_index])
+            self.next_float(&self.input[start..self.current_index], start_loc)
         } else {
             // Parse as integer
             let int_str = &self.input[start..self.current_index];
             match int_str.parse::<i64>() {
-                Ok(value) => Ok((start_loc, Token::IntegerLiteral(value), self.location)),
+                Ok(value) => {
+                    let mut end_location = self.location;
+                    end_location.go_right();
+                    Ok((start_loc, Token::IntegerLiteral(value), end_location))},
                 Err(_) => Err(LexError::IntegerFormatError(start_loc, int_str.to_string())),
             }
         }
     }
 
-    pub fn next_float(&mut self, integral_part: &str) -> Result<Span, LexError> {
+    pub fn next_float(&mut self, integral_part: &str, start_location: Location) -> Result<Span, LexError> {
         self.next_char(); // Consume the '.'
 
         let fractional_start = self.current_index;
@@ -194,7 +194,11 @@ impl<'a> Lexer<'a> {
         let float_str = format!("{}.{}", integral_part, fractional_part);
 
         match float_str.parse::<f64>() {
-            Ok(value) => Ok((self.location, Token::FloatLiteral(value), self.location)),
+            Ok(value) => {
+                let mut end_location = self.location;
+                end_location.go_right();
+                Ok((start_location, Token::FloatLiteral(value), end_location))
+            },
             Err(_) => Err(LexError::FloatFormatError(self.location, float_str)),
         }
     }
@@ -356,6 +360,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
+
 pub type Span = (Location, Token, Location);
 
 impl<'a> Iterator for Lexer<'a> {
@@ -369,6 +374,7 @@ impl<'a> Iterator for Lexer<'a> {
             None => {
                 if !self.has_ended {
                     self.has_ended = true;
+                    self.loc().go_right();
                     return Some(Ok((self.loc(), Token::EndOfFile, self.loc())));
                 } else {
                     return None;
@@ -390,4 +396,114 @@ impl<'a> Iterator for Lexer<'a> {
                 .map_or_else(|| Err(LexError::Unexpected(self.loc(), c)), Ok)
         })
     }
+}
+
+
+// TESTS
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    
+    fn assert_lexer_output(lexer: &mut Lexer, expected_start_loc: Location, expected_token: Token, expected_end_loc: Location) {
+        match lexer.next() {
+            Some(Ok((start_loc, token, end_loc))) => {
+                assert_eq!(start_loc, expected_start_loc);
+                assert_eq!(token, expected_token);
+                assert_eq!(end_loc, expected_end_loc);
+            }
+            _ => panic!("Expected a valid token, but got an error or None"),
+        }
+    }
+
+    #[test]
+    fn test_tokenize_keywords() {
+        let mut lexer = Lexer::new("const");
+        let expected_start_loc = Location::new(1, 1);
+        let expected_end_loc = Location::new(1, 5);
+        let expected_token = Token::Const;
+
+        assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+    }
+
+    #[test]
+fn test_tokenize_identifier() {
+    let mut lexer = Lexer::new("myVariable");
+    let expected_start_loc = Location::new(1, 1);
+    let expected_end_loc = Location::new(1, 11); // Adjust according to the length of "myVariable"
+    let expected_token = Token::Identifier("myVariable".to_string());
+
+    assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+}
+
+#[test]
+fn test_tokenize_integer() {
+    let mut lexer = Lexer::new("12345");
+    let expected_start_loc = Location::new(1, 1);
+    let expected_end_loc = Location::new(1, 6); // Adjust according to the length of "12345"
+    let expected_token = Token::IntegerLiteral(12345);
+
+    assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+}
+
+#[test]
+fn test_tokenize_float() {
+    let mut lexer = Lexer::new("123.45");
+    let expected_start_loc = Location::new(1, 1);
+    let expected_end_loc = Location::new(1, 7); // Adjust according to the length of "123.45"
+    let expected_token = Token::FloatLiteral(123.45);
+
+    assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+}
+
+#[test]
+fn test_tokenize_string() {
+    let mut lexer = Lexer::new("\"Hello, World!\"");
+    let expected_start_loc = Location::new(1, 1);
+    let expected_end_loc = Location::new(1, 15); // Adjust according to the length of the string
+    let expected_token = Token::StringLiteral("Hello, World!".to_string());
+
+    assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+}
+
+#[test]
+fn test_tokenize_symbols() {
+    let mut lexer = Lexer::new("+");
+    let expected_start_loc = Location::new(1, 1);
+    let expected_end_loc = Location::new(1, 2); // Symbols are usually single characters
+    let expected_token = Token::Plus; // Replace with the actual token for '+'
+
+    assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+
+    // Repeat for other symbols like '-', '*', '/', etc.
+}
+
+#[test]
+fn test_ignore_comments() {
+    let mut lexer = Lexer::new("# This is a comment\nx");
+    let expected_start_loc = Location::new(2, 1); // 'x' starts at the second line
+    let expected_end_loc = Location::new(2, 2);
+    let expected_token = Token::Identifier("x".to_string());
+
+    assert_lexer_output(&mut lexer, expected_start_loc, expected_token, expected_end_loc);
+}
+
+#[test]
+fn test_error_unterminated_string() {
+    let mut lexer = Lexer::new("\"unterminated string");
+    match lexer.next() {
+        Some(Err(LexError::UnterminatedStringLiteral(loc))) => {
+            assert_eq!(loc, Location::new(1, 1)); // The location where the error occurs
+        },
+        _ => panic!("Expected an unterminated string literal error"),
+    }
+}
+
+// Add more error cases like invalid number format, unexpected character, etc.
+
+
+
+    // Add more tests for different token types (identifiers, numbers, strings, etc.)
 }
