@@ -23,17 +23,17 @@ fn main() {
     let mut env = Environment::new();
     env.add_function("Print", Value::Function { function: print_ });
     let lexer = Lexer::new(&test);
-    // for item in lexer {
-    //     println!("{:?}", item);
-    // }
-    let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
-    let lines = match ast {
-        Algorithm::Body { lines } => lines,
-    };
-    // // println!("{:?}", ast);
-    let mut  compiler = Compiler::new(lines, env);
-    let result = compiler.eval();
-    println!("{:?}", result);
+    for item in lexer {
+        println!("{:?}", item);
+    }
+    // let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
+    // let lines = match ast {
+    //     Algorithm::Body { lines } => lines,
+    // };
+    // // // println!("{:?}", ast);
+    // let mut  compiler = Compiler::new(lines, env);
+    // let result = compiler.eval();
+    // println!("{:?}", result);
 }
 
 fn read_test() -> String {

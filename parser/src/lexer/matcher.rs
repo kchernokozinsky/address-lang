@@ -21,7 +21,6 @@ pub fn match_single_symbol_token(c: char) -> Option<Token> {
         '-' => Some(Token::Minus),
         '+' => Some(Token::Plus),
         '\'' => Some(Token::Apostrophe),
-        '\n' => Some(Token::NewLine),
         '|' => Some(Token::VerticalBar),
         '@' => Some(Token::At),
         _ => None,
@@ -60,7 +59,6 @@ mod tests {
         assert_eq!(match_single_symbol_token(')'), Some(Token::RightParenthesis));
         assert_eq!(match_single_symbol_token('('), Some(Token::LeftParenthesis));
         assert_eq!(match_single_symbol_token('\''), Some(Token::Apostrophe));
-        assert_eq!(match_single_symbol_token('\n'), Some(Token::NewLine));
         assert_eq!(match_single_symbol_token('|'), Some(Token::VerticalBar));
         assert_eq!(match_single_symbol_token('@'), Some(Token::At));
 

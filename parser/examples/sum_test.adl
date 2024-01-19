@@ -1,6 +1,6 @@
 b = 25; 'b = 0; 
 fi = 5; 'fi = 1; ''fi = 2; '''fi = 3; ''''fi = 4; 
 K ... 
-P {'fi == null} @E | 'b = 'b + 'fi; 'fi =''fi; 
-@K
-E ... P {'fi == null} Print{'fi, 'b} | 
+P{'fi == null} @E| 'b = 'b + 'fi; 'fi =''fi; 
+@K 
+E ... P {'fi == null} Print{'fi, 'b} |   
