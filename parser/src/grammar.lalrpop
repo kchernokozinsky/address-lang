@@ -5,7 +5,7 @@ use crate::lexer::token::Token;
 grammar;
 
 pub Algorithm: Algorithm = {
-    <lines:FileLine*> => Algorithm::Body{lines},
+    <lines:FileLine*> => Algorithm::Body{lines}
 };
 
 pub FileLine: FileLine = {
@@ -39,11 +39,22 @@ Labels: Vec<String> = { // (1)
 };
 
 pub OneLineStatement: OneLineStatement = {
+    CallSubProgram,
     UnconditionalJump,
     Loop,
     Predicate,
-    "!" => OneLineStatement::Exit
-    
+    "!" => OneLineStatement::Exit,
+    "RETURN" => OneLineStatement::Return
+};
+
+pub CallSubProgram: OneLineStatement = {
+    "SUB_PROGRAM" <sp_name: Identifier> "{" <args: Parameters> "}" <label_to: Identifier>  => {
+        OneLineStatement::SubProgram{
+            sp_name
+          , args: args.into_iter().map(Box::new).collect()
+          , label_to
+        }
+}
 };
 
 pub Predicate: OneLineStatement = {
@@ -250,10 +261,12 @@ extern {
         "REPLACE" => Token::Replace,
         "LOOP" => Token::Loop,
         "PREDICATE" => Token::Predicate,
+        "SUB_PROGRAM" =>Token::SubProgram,
         "@" => Token::At,
         "!" => Token::Bang,
 
         // Basic Keywords:
+        "RETURN" => Token::Return,
         "FALSE" => Token::False,
         "NULL" => Token::Null,
         "TRUE" => Token::True,

@@ -5,16 +5,16 @@ pub mod value;
 use environment::*;
 use value::*;
 
-pub struct Compiler {
+pub struct Context {
     lines: Vec<FileLine>,
     env: Environment,
     current: usize,
     to_stop: bool,
 }
 
-impl Compiler {
-    pub fn new(lines: Vec<FileLine>, env: Environment) -> Compiler {
-        let mut compiler = Compiler {
+impl Context {
+    pub fn new(lines: Vec<FileLine>, env: Environment) -> Context {
+        let mut compiler = Context {
             lines,
             env,
             current: 0,
@@ -46,7 +46,7 @@ impl Compiler {
     }
 }
 
-fn eval_algorithm(cmp: &mut Compiler) -> Result<(), String> {
+fn eval_algorithm(cmp: &mut Context) -> Result<(), String> {
     loop {
         if cmp.to_stop {
             return Ok(());
@@ -68,7 +68,7 @@ fn eval_algorithm(cmp: &mut Compiler) -> Result<(), String> {
     Ok(())
 }
 
-fn eval_file_line(cmp: &mut Compiler, line: FileLine) -> Result<(), String> {
+fn eval_file_line(cmp: &mut Context, line: FileLine) -> Result<(), String> {
     match line {
         FileLine::Line {
             labels: _s,
@@ -79,7 +79,7 @@ fn eval_file_line(cmp: &mut Compiler, line: FileLine) -> Result<(), String> {
     }
 }
 
-pub fn eval_statements(cmp: &mut Compiler, statements: Statements) -> Result<(), String> {
+pub fn eval_statements(cmp: &mut Context, statements: Statements) -> Result<(), String> {
     match statements {
         Statements::OneLineStatement(stmnt) => eval_one_line_statement(cmp, stmnt),
         Statements::SimpleStatements(stmnts) => {
@@ -92,7 +92,7 @@ pub fn eval_statements(cmp: &mut Compiler, statements: Statements) -> Result<(),
         }
     }
 }
-fn eval_one_line_statement(cmp: &mut Compiler, statement: OneLineStatement) -> Result<(), String> {
+fn eval_one_line_statement(cmp: &mut Context, statement: OneLineStatement) -> Result<(), String> {
     match statement {
         OneLineStatement::Loop {
             initial_value,
@@ -132,10 +132,12 @@ fn eval_one_line_statement(cmp: &mut Compiler, statement: OneLineStatement) -> R
                 ))
             }
         },
+        OneLineStatement::SubProgram { sp_name, args, label_to } => Ok(()),
+        OneLineStatement::Return => Ok(()),
     }
 }
 
-fn eval_statement(cmp: &mut Compiler, statement: SimpleStatement) -> Result<(), String> {
+fn eval_statement(cmp: &mut Context, statement: SimpleStatement) -> Result<(), String> {
     match statement {
         SimpleStatement::Expression { expression } => {
             if let Err(e) = eval_expression(cmp, expression) {
@@ -217,14 +219,14 @@ fn eval_statement(cmp: &mut Compiler, statement: SimpleStatement) -> Result<(), 
     }
 }
 
-fn bind(cmp: &mut Compiler, lhs: &Expression, address: i64) -> Result<(), String> {
+fn bind(cmp: &mut Context, lhs: &Expression, address: i64) -> Result<(), String> {
     match lhs {
         Expression::Var { name } => Ok(cmp.env.add_variable(name, address)),
         _ => Err(format!("{:?} is not a variable", lhs)),
     }
 }
 
-fn eval_expression(cmp: &mut Compiler, expression: Expression) -> Result<Value, String> {
+fn eval_expression(cmp: &mut Context, expression: Expression) -> Result<Value, String> {
     match expression {
         Expression::Int { value } => Ok(Value::Int { value }),
         Expression::Call { function, args } => {

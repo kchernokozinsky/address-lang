@@ -142,6 +142,8 @@ impl<'a> Lexer<'a> {
             "R" => Token::Replace,
             "or" => Token::Or,
             "and" => Token::And,
+            "SP" => Token::SubProgram,
+            "return" => Token::Return,
 
             s => Token::Identifier(s.to_string()),
         };
@@ -524,7 +526,6 @@ mod tests {
             expected_token,
             expected_end_loc,
         );
-
         // Repeat for other symbols like '-', '*', '/', etc.
     }
 

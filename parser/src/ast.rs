@@ -27,6 +27,11 @@ pub enum Statements {
 
 #[derive(Clone, Debug)]
 pub enum OneLineStatement {
+    SubProgram {
+        sp_name: String,
+        args: Vec<Box<Expression>>,
+        label_to: String
+    },
     Loop {
         initial_value: Expression,
         step: Expression,
@@ -40,6 +45,7 @@ pub enum OneLineStatement {
         if_false: Box<Statements>,
     },
     Exit,
+    Return,
     UnconditionalJump { label: String },
 }
 

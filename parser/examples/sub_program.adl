@@ -1,0 +1,7 @@
+SP a {a, b, c, d} k
+
+!
+
+f ... null => a; null => c;
+a => c
+return

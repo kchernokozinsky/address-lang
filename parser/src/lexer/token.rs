@@ -43,10 +43,12 @@ pub enum Token {
     Exchange,
     Loop,
     Predicate,
+    SubProgram,
     At,
     Bang,
 
     // Basic Keywords:
+    Return,
     False,
     Null,
     True,
@@ -102,6 +104,7 @@ impl fmt::Display for Token {
             Apostrophe => f.write_str("'"),
             At => f.write_str("@"),
             Bang => f.write_str("!"),
+            Return => f.write_str("return"),
 
             // Basic Keywords:
             False => f.write_str("false"),
@@ -112,6 +115,7 @@ impl fmt::Display for Token {
             Loop => f.write_str("loop"),
             Replace => f.write_str("replace"),
             Predicate => f.write_str("predicate"), 
+            SubProgram => f.write_str("subprogram"),
             Not => f.write_str("not"),
             Or => f.write_str("or"),
             Let => f.write_str("let"),
