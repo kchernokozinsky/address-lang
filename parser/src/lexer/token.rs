@@ -2,7 +2,7 @@ use std::fmt::{self};
 
 /// Tokens representing basic elements of the address language syntax.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Token {
+pub enum TokenKind {
     Identifier(String),
     IntegerLiteral(i64),
     FloatLiteral(f64),
@@ -60,9 +60,9 @@ pub enum Token {
     Const,
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Token::*;
+        use TokenKind::*;
 
         match self {
             Identifier(value) => write!(f, "{}", value),

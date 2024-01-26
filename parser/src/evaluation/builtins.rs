@@ -1,6 +1,9 @@
 use crate::evaluation::*;
 
 pub fn print_ (args: Vec<Value>) -> Result<Value, String> {
-    print!("{:?}\n", args);
+    for arg in args {
+    print!("{}", arg);
+    }
+    print!("\n");
     Ok(Value:: Null)
 }

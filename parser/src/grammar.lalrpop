@@ -1,11 +1,11 @@
 use crate::ast::*;
 use crate::errors::LexError;
 use crate::lexer::location::Location as LexLocation;
-use crate::lexer::token::Token;
+use crate::lexer::token::TokenKind;
 grammar;
 
 pub Algorithm: Algorithm = {
-    <lines:FileLine*> => Algorithm::Body{lines}
+    <lines:FileLine*> => Algorithm::Body(lines)
 };
 
 pub FileLine: FileLine = {
@@ -67,12 +67,14 @@ pub Predicate: OneLineStatement = {
 };
 
 pub Loop: OneLineStatement = {
-    "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression> "}" <alpha: Identifier> <betta: Identifier> => OneLineStatement::Loop{
+    "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier> => OneLineStatement::Loop{
         initial_value: a
       , step: b
-      , last_value: c
+      , last_value_or_condition: c
+      , iterator: e
       , label_until: alpha, 
       label_to: betta }
+
 };
 
 pub UnconditionalJump: OneLineStatement = {
@@ -220,61 +222,59 @@ extern {
     type Location = LexLocation;
     type Error = LexError;
 
-    enum Token {
-    "IDENTIFIER" => Token::Identifier (<String>),
-    "INTEGER_LITERAL" => Token::IntegerLiteral (<i64>),
-    "FLOAT_LITERAL" => Token::FloatLiteral (<f64>),
-    "STRING_LITERAL" => Token::StringLiteral (<String>),
-    "NEW_LINE" => Token::NewLine,
-    "END_OF_FILE" => Token::EndOfFile,
-    "(" => Token::LeftParenthesis,
-        ")" => Token::RightParenthesis,
-        "[" => Token::LeftSquareBracket,
-        "]" => Token::RightSquareBracket,
-        ":" => Token::Colon,
-        "," => Token::Comma,
-        ";" => Token::Semicolon,
-        "*" => Token::Multiply,
-        "+" => Token::Plus,
-        "-" => Token::Minus,
-        "/" => Token::Slash,
-        "|" => Token::VerticalBar, // '|'
-        "&" => Token::Ampersand,    // '&'
-        "<" => Token::LessThan,
-        ">" => Token::GreaterThan,
-        "=" => Token::Equal,
-        "." => Token::Dot,
-        "%" => Token::Percent,
-        "{" => Token::LeftCurlyBrace,
-        "}" => Token::RightCurlyBrace,
-        "==" => Token::EqualEqual,
-        "!=" => Token::NotEqual,
-        "=<" => Token::LessThanEqual,
-        ">=" => Token::GreaterThanEqual,
-        ">>" => Token::RightShift,
-        "<<" => Token::LeftShift,
-        "//" => Token::DoubleSlash, // '//'
-        "=>" => Token::Send,
-        "..." => Token::Ellipsis,
-        "'" => Token::Apostrophe,
-        "<=>" => Token::Exchange,
-        "REPLACE" => Token::Replace,
-        "LOOP" => Token::Loop,
-        "PREDICATE" => Token::Predicate,
-        "SUB_PROGRAM" =>Token::SubProgram,
-        "@" => Token::At,
-        "!" => Token::Bang,
-
-        // Basic Keywords:
-        "RETURN" => Token::Return,
-        "FALSE" => Token::False,
-        "NULL" => Token::Null,
-        "TRUE" => Token::True,
-        "AND" => Token::And,
-        "DEL" => Token::Del,
-        "NOT" => Token::Not,
-        "OR" => Token::Or,
-        "LET" => Token::Let,
-        "CONST" => Token::Const,
+    enum TokenKind {
+    "IDENTIFIER" => TokenKind::Identifier (<String>),
+    "INTEGER_LITERAL" => TokenKind::IntegerLiteral (<i64>),
+    "FLOAT_LITERAL" => TokenKind::FloatLiteral (<f64>),
+    "STRING_LITERAL" => TokenKind::StringLiteral (<String>),
+    "NEW_LINE" => TokenKind::NewLine,
+    "END_OF_FILE" => TokenKind::EndOfFile,
+    "(" => TokenKind::LeftParenthesis,
+        ")" => TokenKind::RightParenthesis,
+        "[" => TokenKind::LeftSquareBracket,
+        "]" => TokenKind::RightSquareBracket,
+        ":" => TokenKind::Colon,
+        "," => TokenKind::Comma,
+        ";" => TokenKind::Semicolon,
+        "*" => TokenKind::Multiply,
+        "+" => TokenKind::Plus,
+        "-" => TokenKind::Minus,
+        "/" => TokenKind::Slash,
+        "|" => TokenKind::VerticalBar, // '|'
+        "&" => TokenKind::Ampersand,    // '&'
+        "<" => TokenKind::LessThan,
+        ">" => TokenKind::GreaterThan,
+        "=" => TokenKind::Equal,
+        "." => TokenKind::Dot,
+        "%" => TokenKind::Percent,
+        "{" => TokenKind::LeftCurlyBrace,
+        "}" => TokenKind::RightCurlyBrace,
+        "==" => TokenKind::EqualEqual,
+        "!=" => TokenKind::NotEqual,
+        "=<" => TokenKind::LessThanEqual,
+        ">=" => TokenKind::GreaterThanEqual,
+        ">>" => TokenKind::RightShift,
+        "<<" => TokenKind::LeftShift,
+        "//" => TokenKind::DoubleSlash,
+        "=>" => TokenKind::Send,
+        "..." => TokenKind::Ellipsis,
+        "'" => TokenKind::Apostrophe,
+        "<=>" => TokenKind::Exchange,
+        "REPLACE" => TokenKind::Replace,
+        "LOOP" => TokenKind::Loop,
+        "PREDICATE" => TokenKind::Predicate,
+        "SUB_PROGRAM" =>TokenKind::SubProgram,
+        "@" => TokenKind::At,
+        "!" => TokenKind::Bang,
+        "RETURN" => TokenKind::Return,
+        "FALSE" => TokenKind::False,
+        "NULL" => TokenKind::Null,
+        "TRUE" => TokenKind::True,
+        "AND" => TokenKind::And,
+        "DEL" => TokenKind::Del,
+        "NOT" => TokenKind::Not,
+        "OR" => TokenKind::Or,
+        "LET" => TokenKind::Let,
+        "CONST" => TokenKind::Const,
     }
 }

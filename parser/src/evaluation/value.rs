@@ -34,6 +34,20 @@ impl Value {
         Ok(Value::Int{value: lv_ + rv_})
     }
 
+    pub fn mul(lv: Value, rv: Value) -> Result<Value, String> {
+        let lv_ = match lv {
+            Value::Int { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        let rv_ = match rv {
+            Value::Int { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        Ok(Value::Int{value: lv_ * rv_})
+    }
+
     pub fn sub(lv: Value, rv: Value) -> Result<Value, String> {
         let lv_ = match lv {
             Value::Int { value } => value,
@@ -45,7 +59,7 @@ impl Value {
             _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
         };
 
-        Ok(Value::Int{value: lv_ - rv_})
+        Ok(Value::Int{value: lv_.wrapping_sub(rv_)})
     }
 }
 
@@ -53,11 +67,11 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Value::Null => write!(f, "Null"),
-            Value::Bool { value } => write!(f, "Boolean: {}", value),
-            Value::Int { value } => write!(f, "Integer: {}", value),
+            Value::Bool { value } => write!(f, "{}", value),
+            Value::Int { value } => write!(f, "{}", value),
             Value::Function { .. } => write!(f, "Function"),
-            Value::String { value } => write!(f, "String: {}", value),
-            Value::Float { value } => write!(f, "Float: {}", value),
+            Value::String { value } => write!(f, "{}", value),
+            Value::Float { value } => write!(f, "{}", value),
         }
     }
 }

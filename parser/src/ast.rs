@@ -1,6 +1,6 @@
 #[derive(Clone, Debug)]
 pub enum Algorithm {
-    Body { lines: Vec<FileLine> },
+    Body(Vec<FileLine>),
 }
 
 #[derive(Clone, Debug)]
@@ -35,7 +35,8 @@ pub enum OneLineStatement {
     Loop {
         initial_value: Expression,
         step: Expression,
-        last_value: Expression,
+        last_value_or_condition: Expression,
+        iterator: Expression,
         label_until: String,
         label_to: String,
     },
