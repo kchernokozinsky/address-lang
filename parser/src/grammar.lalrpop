@@ -1,6 +1,6 @@
 use crate::ast::*;
-use crate::errors::LexError;
-use crate::lexer::location::Location as LexLocation;
+use crate::lexer::errors::LexError;
+use crate::location::Location as LexLocation;
 use crate::lexer::token::TokenKind;
 grammar;
 
@@ -43,49 +43,100 @@ pub OneLineStatement: OneLineStatement = {
     UnconditionalJump,
     Loop,
     Predicate,
-    "!" => OneLineStatement::Exit,
-    "RETURN" => OneLineStatement::Return
+    <l_location:@L> "!" <r_location:@L> => OneLineStatement
+        {
+            l_location,
+            r_location,
+            node: OneLineStatementKind::Exit,
+        },
+    <l_location:@L> "RETURN" <r_location:@L> => OneLineStatement
+        {
+            l_location,
+            r_location,
+            node: OneLineStatementKind::Return
+        }
 };
 
 pub CallSubProgram: OneLineStatement = {
-    "SUB_PROGRAM" <sp_name: Identifier> "{" <args: Parameters> "}" <label_to: Identifier>  => {
-        OneLineStatement::SubProgram{
-            sp_name
-          , args: args.into_iter().map(Box::new).collect()
-          , label_to
-        }
+    <l_location:@L> "SUB_PROGRAM" <sp_name: Identifier> "{" <args: Parameters> "}" <label_to: Identifier> <r_location:@L> => OneLineStatement
+        {
+            l_location,
+            r_location,
+            node: OneLineStatementKind::SubProgram
+                {
+                sp_name,
+                args: args.into_iter().map(Box::new).collect(),
+                label_to
+                }
 }
 };
 
 pub Predicate: OneLineStatement = {
-    "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statements> "|" <r:Statements> => {
-        OneLineStatement::Predicate{
-            condition
-          , if_true: Box::new(l)
-          , if_false: Box::new(r)}
+    <l_location:@L> "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statements> "|" <r:Statements> <r_location:@L> => OneLineStatement
+        {
+            l_location,
+            r_location,
+            node: OneLineStatementKind::Predicate
+                {
+                condition,
+                if_true: Box::new(l),
+                if_false: Box::new(r)
+                }
         }
 };
 
 pub Loop: OneLineStatement = {
-    "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier> => OneLineStatement::Loop{
-        initial_value: a
-      , step: b
-      , last_value_or_condition: c
-      , iterator: e
-      , label_until: alpha, 
-      label_to: betta }
+    <l_location:@L> "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier> <r_location:@L> => OneLineStatement
+        {
+            l_location,
+            r_location,
+            node: OneLineStatementKind::Loop
+                {
+                initial_value: a,
+                step: b,
+                last_value_or_condition: c,
+                iterator: e,
+                label_until: alpha, 
+                label_to: betta 
+                }
+        }
 
 };
 
 pub UnconditionalJump: OneLineStatement = {
-    "@" <label: Identifier> => OneLineStatement::UnconditionalJump{label},
+    <l_location:@L> "@" <label: Identifier> <r_location:@L> => OneLineStatement
+        {
+            l_location,
+            r_location,
+            node: OneLineStatementKind::UnconditionalJump{label},
+        }
 };
 
 pub SimpleStatement: SimpleStatement = {
-    <lhs:Expression> "=" <rhs:Expression> => SimpleStatement::Assign{lhs, rhs},
-    <lhs:Expression> "<=>" <rhs:Expression> => SimpleStatement::Exchange{lhs, rhs},
-    <lhs:Expression> "=>" <rhs:Expression> => SimpleStatement::Send{lhs: rhs,rhs: lhs},
-    <expression: Expression> => SimpleStatement::Expression{expression},
+    <l_location:@L> <lhs:Expression> "=" <rhs:Expression> <r_location:@L> => SimpleStatement
+        {
+            l_location,
+            r_location,
+            node: SimpleStatementKind::Assign{lhs, rhs},
+        },
+    <l_location:@L> <lhs:Expression> "<=>" <rhs:Expression> <r_location:@L> => SimpleStatement
+        {
+            l_location,
+            r_location,
+            node: SimpleStatementKind::Exchange{lhs, rhs},
+        },
+    <l_location:@L> <lhs:Expression> "=>" <rhs:Expression> <r_location:@L> => SimpleStatement
+        {
+            l_location,
+            r_location,
+            node: SimpleStatementKind::Send{lhs: rhs,rhs: lhs},
+        },
+    <l_location:@L> <expression: Expression> <r_location:@L> => SimpleStatement
+        {
+            l_location,
+            r_location,
+            node: SimpleStatementKind::Expression{expression},
+        }
     };
 
 
@@ -94,33 +145,78 @@ pub Expression: Expression = {
     };
 
 ExpressionPrecedence8: Expression = {
-    <lhs:ExpressionPrecedence8> "OR" <rhs:ExpressionPrecedence7> => Expression::BinaryOp{op: BinaryOp::Or, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <l_location:@L> <lhs:ExpressionPrecedence8> "OR" <rhs:ExpressionPrecedence7> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::Or, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
     ExpressionPrecedence7,
 };
 
 ExpressionPrecedence7: Expression = {
-    <lhs:ExpressionPrecedence7> "AND" <rhs:ExpressionPrecedence6> => Expression::BinaryOp{op: BinaryOp::And, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <l_location:@L> <lhs:ExpressionPrecedence7> "AND" <rhs:ExpressionPrecedence6> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::And, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
     ExpressionPrecedence6,
 };
 
 ExpressionPrecedence6: Expression = {
-    <lhs:ExpressionPrecedence6> "==" <rhs:ExpressionPrecedence5> => Expression::BinaryOp{op: BinaryOp::EQ, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:ExpressionPrecedence6> "!=" <rhs:ExpressionPrecedence5> => Expression::BinaryOp{op: BinaryOp::NE, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:ExpressionPrecedence6> "<" <rhs:ExpressionPrecedence5> => Expression::BinaryOp{op: BinaryOp::LT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <l_location:@L> <lhs:ExpressionPrecedence6> "==" <rhs:ExpressionPrecedence5> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::EQ, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
+    <l_location:@L> <lhs:ExpressionPrecedence6> "!=" <rhs:ExpressionPrecedence5> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::NE, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
+    <l_location:@L> <lhs:ExpressionPrecedence6> "<" <rhs:ExpressionPrecedence5> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::LT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
     ExpressionPrecedence5
 }
 
 // ArithmeticExpression
 ExpressionPrecedence5: Expression = {
-    <lhs:ExpressionPrecedence5> "+" <rhs:ExpressionPrecedence4> => Expression::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:ExpressionPrecedence5> "-" <rhs:ExpressionPrecedence4> => Expression::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <l_location:@L>  <lhs:ExpressionPrecedence5> "+" <rhs:ExpressionPrecedence4> <r_location:@L> =>  Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::Sum, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
+    <l_location:@L> <lhs:ExpressionPrecedence5> "-" <rhs:ExpressionPrecedence4> <r_location:@L>=>  Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::Sub, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
     ExpressionPrecedence4
 }
 
 // FactorExpression
 ExpressionPrecedence4: Expression = {
-    <lhs:ExpressionPrecedence4> "*" <rhs:ExpressionPrecedence3> => Expression::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
-    <lhs:ExpressionPrecedence4> "/" <rhs:ExpressionPrecedence3> => Expression::BinaryOp{op: BinaryOp::Div, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+    <l_location:@L> <lhs:ExpressionPrecedence4> "*" <rhs:ExpressionPrecedence3> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::Mul, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
+    <l_location:@L> <lhs:ExpressionPrecedence4> "/" <rhs:ExpressionPrecedence3> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::Div, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
     ExpressionPrecedence3
 };
 
@@ -129,8 +225,18 @@ ExpressionPrecedence3: Expression = {
 }
 
 ExpressionPrecedence2: Expression = {
-    "NOT" <expression:ExpressionPrecedence2> => Expression::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
-    "'" <expression:ExpressionPrecedence2> => Expression::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
+    <l_location:@L> "NOT" <expression:ExpressionPrecedence2> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::UnaryOp{op: UnaryOp::Not, expr: Box::new(expression)},
+        },
+    <l_location:@L> "'" <expression:ExpressionPrecedence2> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
+        },
     ExpressionPrecedence1
 }
 
@@ -151,7 +257,12 @@ LiteralExpression: Expression = {
 };
 
 FunctionCall: Expression = {
-    <function: "IDENTIFIER"> "{" <args: Parameters> "}" => Expression::Call{function, args: args.into_iter().map(Box::new).collect()},
+    <l_location:@L> <function: "IDENTIFIER"> "{" <args: Parameters> "}" <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Call{function, args: args.into_iter().map(Box::new).collect()},
+        }
 }
 
 #[inline]
@@ -188,30 +299,62 @@ SimpleStatements = Semicolon<SimpleStatement>;
 Parameters = Comma<Expression>;
 
 Variable: Expression = {
-    <name:"IDENTIFIER"> => Expression::Var{name}
+   <l_location:@L> <name:"IDENTIFIER"> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Var{name}
+        }
 }
 
 NullLiteral: Expression = {
-    <n:"NULL"> => Expression::Null,
+    <l_location:@L> <n:"NULL"> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Null,
+        }
 };
 
 
 IntLiteral: Expression = {
-    <n:"INTEGER_LITERAL"> => Expression::Int{value: n},
+   <l_location:@L> <n:"INTEGER_LITERAL"> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Int{value: n}
+        }
 };
 
 FloatLiteral: Expression = {
-    <n:"FLOAT_LITERAL"> => Expression::Float{value: n},
+   <l_location:@L> <n:"FLOAT_LITERAL"> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Float{value: n},
+        }
 }
 
 BoolLiteral: Expression = {
-    "TRUE" => Expression::Bool{value: true},
-    "FALSE" => Expression::Bool{value: false},
-
+    <l_location:@L> "TRUE" <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Bool{value: true}
+        },
+    <l_location:@L> "FALSE" <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::Bool{value: false}
+        },
 };
 
 StringLiteral: Expression = {
-    <s: "STRING_LITERAL"> => Expression::String{value: s}
+   <l_location:@L> <s: "STRING_LITERAL"> <r_location:@L> => Expression {
+    l_location,
+    r_location,
+    node: ExpressionKind::String{value: s}}
 };
 
 Identifier: String = {

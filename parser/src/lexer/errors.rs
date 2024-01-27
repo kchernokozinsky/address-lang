@@ -1,6 +1,7 @@
 use std::{fmt::{Display, Formatter, self}, error::Error};
 use crate::location::Location;
 
+
 pub enum LexError {
     Unexpected(Location, char),
     UnterminatedStringLiteral(Location),

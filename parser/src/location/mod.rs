@@ -1,8 +1,5 @@
-//! Datatypes to support source location information.
-
 use std::fmt;
 
-/// A location somewhere in the sourcecode.
 #[derive(Clone, Copy, Default, Eq)]
 pub struct Location {
     row: usize,
@@ -12,14 +9,17 @@ pub struct Location {
 
 impl PartialEq for Location {
     fn eq(&self, other: &Self) -> bool {
-        self.row == other.row && 
-        self.column == other.column
+        self.row == other.row && self.column == other.column
     }
 }
 
 impl fmt::Debug for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Location {{ row: {}, column: {} }}", self.row, self.column)
+        write!(
+            f,
+            "Location {{ row: {}, column: {} }}",
+            self.row, self.column
+        )
     }
 }
 
@@ -62,10 +62,10 @@ impl Location {
 
 impl Location {
     pub fn new(row: usize, column: usize) -> Self {
-        Location { 
-            row, 
-            column, 
-            previos_column: column 
+        Location {
+            row,
+            column,
+            previos_column: column,
         }
     }
 
@@ -96,7 +96,6 @@ impl Location {
         self.row += 1;
         self.column = 0;
     }
-
 
     pub fn move_back_newline(&mut self) {
         if self.row > 1 {

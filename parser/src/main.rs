@@ -1,11 +1,11 @@
 pub mod ast;
-
-pub mod errors;
 pub mod evaluation;
 pub mod lexer;
-use std::fs;
+pub mod location;
+pub mod util;
 
 use lexer::*;
+use util::*;
 use ast::*;
 use builtins::*;
 use evaluation::*;
@@ -19,7 +19,7 @@ lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_test();
+    let test = read_file("examples/loop/loop_list_squaring.adl");
     let mut env = Environment::new();
     env.add_function("Print", Value::Function { function: print_ });
     let lexer = Lexer::new(&test);
@@ -27,30 +27,13 @@ fn main() {
     //     println!("{:?}", item);
     // }
     let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
-    // let lines = match ast {
-    //     Algorithm::Body { lines } => lines,
-    // };
-    println!("{:?}", ast);
-    // let mut  compiler = Compiler::new(lines, env);
-    // let result = compiler.eval();
-    // println!("{:?}", result);
+    // println!("{:?}", ast);
+    let lines = match ast {
+        Algorithm::Body(lines) => lines,
+    };
+
+    let mut  compiler = Evaluator::new(lines, env);
+    let result = compiler.eval();
+    println!("{:?}", result);
 }
 
-fn read_test() -> String {
-    // let f = File::open("examples/test.adl").unwrap();
-    let f = "examples/sub_program.adl";
-    // let mut lines = BufReader::new(f).lines();
-    // let mut test = String::new();
-
-    // loop {
-    //     if let Some(s) = lines.next() {
-    //         test.push_str(&s.unwrap());
-    //     } else {
-    //         break;
-    //     }
-    // }
-
-    let contents = fs::read_to_string(&f)
-        .expect("Should have been able to read the file");
-    return contents;
-}

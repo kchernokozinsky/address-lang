@@ -1,8 +1,11 @@
 pub mod builtins;
 pub mod environment;
+pub mod errors;
 pub mod value;
 use crate::ast::*;
+use crate::location::Location;
 use environment::*;
+use errors::*;
 use value::*;
 
 pub struct Evaluator {
@@ -43,7 +46,7 @@ impl Evaluator {
         self.to_stop = true
     }
 
-    pub fn eval(&mut self) -> Result<(), String> {
+    pub fn eval(&mut self) -> Result<(), EvaluationError> {
         loop {
             if self.to_stop {
                 return Ok(());
@@ -67,7 +70,7 @@ impl Evaluator {
         Ok(())
     }
 
-    fn eval_file_line(&mut self, line: FileLine) -> Result<(), String> {
+    fn eval_file_line(&mut self, line: FileLine) -> Result<(), EvaluationError> {
         match line {
             FileLine::Line {
                 labels: _s,
@@ -76,7 +79,7 @@ impl Evaluator {
         }
     }
 
-    pub fn eval_statements(&mut self, statements: Statements) -> Result<(), String> {
+    pub fn eval_statements(&mut self, statements: Statements) -> Result<(), EvaluationError> {
         match statements {
             Statements::OneLineStatement(stmnt) => self.eval_one_line_statement(stmnt),
             Statements::SimpleStatements(stmnts) => {
@@ -98,7 +101,9 @@ impl Evaluator {
         label_until: &String,
         label_to: &String,
         condition: Option<Expression>,
-    ) -> Result<(), String> {
+        l_location: Location,
+        r_location: Location,
+    ) -> Result<(), EvaluationError> {
         let line_from = self.current_line + 1;
         let line_to = *self
             .env
@@ -108,10 +113,11 @@ impl Evaluator {
         let line_to_jump = match self.env.get_line_by_label(label_to) {
             Some(line) => *line,
             None => {
-                return Err(format!(
-                    "You tried to jump to '{:?}' which is not declared",
-                    label_to
-                ))
+                return Err(EvaluationError::RuntimeError(RuntimeError::LabelNotFound(
+                    l_location,
+                    r_location,
+                    label_to.to_string(),
+                )));
             }
         };
         let mut it_just_set: bool = true;
@@ -120,9 +126,19 @@ impl Evaluator {
             let mut it_value = match self.env.get_value_by_address(iterator) {
                 Ok(v) => match v {
                     Value::Int { value } => *value,
-                    _ => return Err(format!("value '{}' is not a valid integer", v)),
+                    _ => {
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            l_location,
+                            r_location,
+                            format!("value '{}' must be an integer", v),
+                        )))
+                    }
                 },
-                Err(e) => return Err(e),
+                Err(_) => {
+                    return Err(EvaluationError::RuntimeError(RuntimeError::NullReference(
+                        l_location, r_location,
+                    )))
+                }
             };
             // increment iterator
             if !it_just_set {
@@ -142,9 +158,15 @@ impl Evaluator {
                             Ok(v) => match v {
                                 Value::Bool { value } => value,
                                 _ => {
-                                    return Err(format!(
-                                        " expression '{:?}' is not a Bool!",
-                                        condition.unwrap()
+                                    return Err(EvaluationError::RuntimeError(
+                                        RuntimeError::TypeError(
+                                            l_location,
+                                            r_location,
+                                            format!(
+                                                "expression '{:?}' must be boolean",
+                                                condition.unwrap()
+                                            ),
+                                        ),
                                     ))
                                 }
                             },
@@ -170,10 +192,14 @@ impl Evaluator {
                 }
 
                 _ => {
-                    return Err(format!(
-                        "Expression '{:?}' is not an Integer or Bool",
-                        last_value_or_condition
-                    ))
+                    return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        l_location,
+                        r_location,
+                        format!(
+                            "Expression '{:?}' is not an Integer or Bool",
+                            last_value_or_condition
+                        ),
+                    )))
                 }
             }
 
@@ -208,9 +234,13 @@ impl Evaluator {
         }
     }
 
-    fn eval_one_line_statement(&mut self, statement: OneLineStatement) -> Result<(), String> {
-        match statement {
-            OneLineStatement::Loop {
+    fn eval_one_line_statement(
+        &mut self,
+        statement: OneLineStatement,
+    ) -> Result<(), EvaluationError> {
+        let node = statement.node.clone();
+        match node {
+            OneLineStatementKind::Loop {
                 initial_value,
                 step,
                 last_value_or_condition,
@@ -222,10 +252,14 @@ impl Evaluator {
                     Ok(v) => match v {
                         Value::Int { value } => value,
                         _ => {
-                            return Err(format!(
-                                "Expression '{:?}' is not an address or variable",
-                                &iterator
-                            ))
+                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                iterator.l_location,
+                                iterator.r_location,
+                                format!(
+                                    "Expression '{:?}' must be address (Integer) or Variable",
+                                    &iterator
+                                ),
+                            )));
                         }
                     },
                     Err(e) => return Err(e),
@@ -235,10 +269,11 @@ impl Evaluator {
                     Ok(v) => match v {
                         Value::Int { value } => value,
                         _ => {
-                            return Err(format!(
-                                "Expression '{:?}' is not an Integer",
-                                &initial_value
-                            ))
+                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                initial_value.l_location,
+                                initial_value.r_location,
+                                format!("Expression '{:?}' must be Integer", &initial_value),
+                            )));
                         }
                     },
                     Err(e) => return Err(e),
@@ -254,7 +289,13 @@ impl Evaluator {
                 let l_step = match self.eval_expression(step.clone()) {
                     Ok(v) => match v {
                         Value::Int { value } => value,
-                        _ => return Err(format!("Expression '{:?}' is not an Integer", &step)),
+                        _ => {
+                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                step.l_location,
+                                step.r_location,
+                                format!("Expression '{:?}' must be Integer", &step),
+                            )))
+                        }
                     },
                     Err(e) => return Err(e),
                 };
@@ -269,10 +310,14 @@ impl Evaluator {
                                 Value::Bool { value }
                             }
                             _ => {
-                                return Err(format!(
-                                    "Expression '{:?}' is not an Integer or Bool",
-                                    &step
-                                ))
+                                return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                    last_value_or_condition.l_location,
+                                    last_value_or_condition.r_location,
+                                    format!(
+                                        "Expression '{:?}' must be Integer or Bool",
+                                        &last_value_or_condition
+                                    ),
+                                )))
                             }
                         },
                         Err(e) => return Err(e),
@@ -285,17 +330,25 @@ impl Evaluator {
                     &label_until,
                     &label_to,
                     cond,
+                    statement.l_location,
+                    statement.r_location,
                 )
             }
-            OneLineStatement::Predicate {
+            OneLineStatementKind::Predicate {
                 condition,
                 if_true,
                 if_false,
             } => {
-                let cond = match self.eval_expression(condition) {
+                let cond = match self.eval_expression(condition.clone()) {
                     Ok(value) => match value {
                         Value::Bool { value } => value,
-                        v => return Err(format!("Value '{:?}' is not a boolean", v)),
+                        _ => {
+                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                condition.l_location,
+                                condition.r_location,
+                                format!("Expression '{:?}' must be Integer or Bool", &condition),
+                            )))
+                        }
                     },
                     Err(e) => return Err(e),
                 };
@@ -305,8 +358,8 @@ impl Evaluator {
                     self.eval_statements(*if_false)
                 }
             }
-            OneLineStatement::Exit => Ok(self.stop_eval()),
-            OneLineStatement::UnconditionalJump { label } => {
+            OneLineStatementKind::Exit => Ok(self.stop_eval()),
+            OneLineStatementKind::UnconditionalJump { label } => {
                 match self.env.get_line_by_label(&label) {
                     Some(line) => {
                         self.is_jumped = true;
@@ -314,88 +367,123 @@ impl Evaluator {
                         Ok(())
                     }
                     None => {
-                        return Err(format!(
-                            "You tried to jump to '{:?}' which is not declared",
-                            label
-                        ))
+                        return Err(EvaluationError::RuntimeError(RuntimeError::LabelNotFound(
+                            statement.l_location,
+                            statement.r_location,
+                            label,
+                        )))
                     }
                 }
             }
-            OneLineStatement::SubProgram {
-                sp_name,
-                args,
-                label_to,
-            } => Ok(()),
-            OneLineStatement::Return => Ok(()),
+            OneLineStatementKind::SubProgram { .. } => {
+                return Err(EvaluationError::UnhandledFormula(
+                    statement.l_location,
+                    statement.r_location,
+                    statement.node.clone(),
+                ))
+            }
+            OneLineStatementKind::Return => {
+                return Err(EvaluationError::UnhandledFormula(
+                    statement.l_location,
+                    statement.r_location,
+                    statement.node.clone(),
+                ))
+            }
         }
     }
 
-    fn eval_statement(&mut self, statement: SimpleStatement) -> Result<(), String> {
-        match statement {
-            SimpleStatement::Expression { expression } => {
-                if let Err(e) = self.eval_expression(expression) {
+    fn eval_statement(&mut self, statement: SimpleStatement) -> Result<(), EvaluationError> {
+        let node = &statement.node;
+        match node {
+            SimpleStatementKind::Expression { expression } => {
+                if let Err(e) = self.eval_expression(expression.clone()) {
                     return Err(e);
                 }
 
                 Ok(())
             }
 
-            SimpleStatement::Assign { lhs, rhs } => {
+            SimpleStatementKind::Assign { lhs, rhs } => {
+                let lhs_node = &lhs.node;
                 let r = match self.eval_expression(rhs.clone()) {
                     Ok(v) => v,
                     Err(e) => return Err(e),
                 };
-                let l = match lhs.clone() {
-                    Expression::Null => todo!(),
-                    Expression::Float { .. } => {
-                        return Err(format!(
-                            "Expression '{:?}' is not an address or variable",
-                            lhs
-                        ))
+                let l: Value = match lhs_node.clone() {
+                    ExpressionKind::Null => todo!(),
+                    ExpressionKind::Float { .. } => {
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            format!("Expression '{:?}' must be address", &lhs),
+                        )))
                     }
-                    Expression::Bool { .. } => {
-                        return Err(format!(
-                            "Expression '{:?}' is not an address or variable",
-                            lhs
-                        ))
+                    ExpressionKind::Bool { .. } => {
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            format!("Expression '{:?}' must be address", &lhs),
+                        )))
                     }
-                    Expression::Int { .. } => self.eval_expression(lhs.clone())?,
-                    Expression::String { .. } => {
-                        return Err(format!(
-                            "Expression '{:?}' is not an address or variable",
-                            lhs
-                        ))
+                    ExpressionKind::Int { .. } => self.eval_expression(lhs.clone())?,
+                    ExpressionKind::String { .. } => {
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            format!("Expression '{:?}' must be address", &lhs),
+                        )))
                     }
-                    Expression::Var { .. } => {
+                    ExpressionKind::Var { .. } => {
                         if let Value::Int { value } = r {
-                            return self.bind(&lhs, value);
+                            return match self.bind(&lhs, value) {
+                                Ok(v) => Ok(v),
+                                Err(_) => {
+                                    return Err(EvaluationError::RuntimeError(
+                                        RuntimeError::NullReference(lhs.l_location, lhs.r_location),
+                                    ))
+                                }
+                            };
                         } else {
-                            return Err(format!("Expression '{:?}' is not an address", rhs));
+                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                lhs.l_location,
+                                lhs.r_location,
+                                format!(
+                                    "Expression '{:?}' must be address",
+                                    &lhs // TO CHECK
+                                ),
+                            )));
                         }
                     }
-                    Expression::Call { .. } => self.eval_expression(lhs.clone())?,
-                    Expression::UnaryOp { op, expr } => match op {
+                    ExpressionKind::Call { .. } => self.eval_expression(lhs.clone())?,
+                    ExpressionKind::UnaryOp { op, expr } => match op {
                         UnaryOp::Dereference => self.eval_expression(*expr)?,
                         UnaryOp::Not => self.eval_expression(lhs.clone())?,
                     },
-                    Expression::BinaryOp { .. } => self.eval_expression(lhs.clone())?,
+                    ExpressionKind::BinaryOp { .. } => self.eval_expression(lhs.clone())?,
                 };
 
                 match l {
                     Value::Int { value } => Ok(self.env.fill_address(value, r)),
                     _ => {
-                        return Err(format!(
-                            "Expression '{:?}' is not an address or variable",
-                            l
-                        ))
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            format!("Expression '{:?}' must be address", &lhs),
+                        )))
                     }
                 }
             }
 
-            SimpleStatement::Send { lhs, rhs } => {
+            SimpleStatementKind::Send { lhs, rhs } => {
                 let address = match self.eval_expression(lhs.clone()) {
                     Ok(Value::Int { value }) => value,
-                    _ => return Err(format!("Expression '{:?}' is not an address", rhs)),
+                    _ => {
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            format!("Expression '{:?}' must be address", &lhs),
+                        )))
+                    }
                 };
 
                 let value = match self.eval_expression(rhs.clone()) {
@@ -406,21 +494,27 @@ impl Evaluator {
                 Ok(self.env.fill_address(address, value))
             }
 
-            _ => Err(format!("unhandled statement: {:?}", statement)),
+            _ => Err(EvaluationError::UnhandledStatement(
+                statement.l_location,
+                statement.r_location,
+                statement.node,
+            )),
         }
     }
 
     fn bind(&mut self, lhs: &Expression, address: i64) -> Result<(), String> {
-        match lhs {
-            Expression::Var { name } => Ok(self.env.add_variable(name, address)),
+        let node = &lhs.node;
+        match node {
+            ExpressionKind::Var { name } => Ok(self.env.add_variable(&name, address)),
             _ => Err(format!("{:?} is not a variable", lhs)),
         }
     }
 
-    fn eval_expression(&mut self, expression: Expression) -> Result<Value, String> {
-        match expression {
-            Expression::Int { value } => Ok(Value::Int { value }),
-            Expression::Call { function, args } => {
+    fn eval_expression(&mut self, expression: Expression) -> Result<Value, EvaluationError> {
+        let node = expression.node;
+        match node {
+            ExpressionKind::Int { value } => Ok(Value::Int { value }),
+            ExpressionKind::Call { function, args } => {
                 let mut vals = vec![];
 
                 for arg in args {
@@ -432,17 +526,43 @@ impl Evaluator {
 
                 let v = match self.env.get_function(&function) {
                     Ok(v) => v,
-                    Err(e) => return Err(e),
+                    Err(_) => {
+                        return Err(EvaluationError::RuntimeError(
+                            RuntimeError::FunctionNotFound(
+                                expression.l_location,
+                                expression.r_location,
+                                function,
+                            ),
+                        ))
+                    }
                 };
 
+                let func_name = function;
+
                 if let Value::Function { function } = v {
-                    function(vals)
+                    match function(vals) {
+                        Ok(v) => Ok(v),
+                        Err(e) => {
+                            return Err(EvaluationError::RuntimeError(
+                                RuntimeError::FunctionCallError(
+                                    expression.l_location,
+                                    expression.r_location,
+                                    func_name,
+                                    e,
+                                ),
+                            ))
+                        }
+                    }
                 } else {
-                    Err(format!("'{}' isn`t  function", &function))
+                    Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        expression.l_location,
+                        expression.r_location,
+                        format!("'{}' isn`t  function", func_name),
+                    )))
                 }
             }
 
-            Expression::BinaryOp { op, lhs, rhs } => {
+            ExpressionKind::BinaryOp { op, lhs, rhs } => {
                 let lv = match self.eval_expression(*lhs) {
                     Ok(v) => v,
                     Err(e) => return Err(e),
@@ -454,40 +574,86 @@ impl Evaluator {
                 };
 
                 match op {
-                    BinaryOp::Sum => Value::sum(lv, rv),
-                    BinaryOp::Sub => Value::sub(lv, rv),
-                    BinaryOp::Mul => Value::mul(lv, rv),
+                    BinaryOp::Sum => match Value::sum(lv, rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            expression.l_location,
+                            expression.r_location,
+                            e,
+                        ))),
+                    },
+                    BinaryOp::Sub => match Value::sub(lv, rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            expression.l_location,
+                            expression.r_location,
+                            e,
+                        ))),
+                    },
+                    BinaryOp::Mul => match Value::mul(lv, rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            expression.l_location,
+                            expression.r_location,
+                            e,
+                        ))),
+                    },
                     BinaryOp::EQ => Ok(Value::Bool { value: lv.eq(&rv) }),
                     BinaryOp::NE => Ok(Value::Bool { value: lv.ne(&rv) }),
                     BinaryOp::LT => Ok(Value::Bool { value: lv.lt(&rv) }),
-                    _ => Err(format!("operator {:?} is unhandled", op)),
+                    _ => Err(EvaluationError::UnhandledBinaryOperation(
+                        expression.l_location,
+                        expression.r_location,
+                        op,
+                    )),
                 }
             }
 
-            Expression::Var { name } => self.env.get_variable(&name),
+            ExpressionKind::Var { name } => match self.env.get_variable(&name) {
+                Ok(v) => Ok(v),
+                Err(_) => Err(EvaluationError::RuntimeError(
+                    RuntimeError::VariableNotFound(
+                        expression.l_location,
+                        expression.r_location,
+                        name,
+                    ),
+                )),
+            },
 
-            Expression::UnaryOp { op, expr } => match op {
+            ExpressionKind::UnaryOp { op, expr } => match op {
                 UnaryOp::Dereference => match self.eval_expression(*expr.clone()) {
                     Ok(Value::Int { value }) => match self.env.get_value_by_address(value) {
                         Ok(value) => Ok(value.clone()),
                         _ => Ok(Value::Null),
                     },
-                    _ => return Err(format!("Expression '{:?}' is not an address", expr)),
+                    _ => {
+                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            expr.l_location,
+                            expr.r_location,
+                            format!("Expression '{:?}' must be address", &expr),
+                        )))
+                    }
                 },
                 UnaryOp::Not => {
                     match self.eval_expression(*expr.clone()) {
                         Ok(value) => match value {
                             Value::Bool { value } => return Ok(Value::Bool { value: !value }),
-                            v => return Err(format!("Value '{:?}' is not a boolean", v)),
+                            _ => {
+                                return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                                    expr.l_location,
+                                    expr.r_location,
+                                    format!("Expression '{:?}' must be boolean", &expr),
+                                )))
+                            }
                         },
                         Err(e) => return Err(e),
                     };
                 }
             },
-            Expression::Bool { value } => Ok(Value::Bool { value }),
-            Expression::String { value } => Ok(Value::String { value }),
-            Expression::Float { value } => Ok(Value::Float { value }),
-            Expression::Null => Ok(Value::Null),
+            ExpressionKind::Bool { value } => Ok(Value::Bool { value }),
+            ExpressionKind::String { value } => Ok(Value::String { value }),
+            ExpressionKind::Float { value } => Ok(Value::Float { value }),
+            ExpressionKind::Null => Ok(Value::Null),
         }
     }
 }

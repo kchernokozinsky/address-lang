@@ -1,8 +1,9 @@
-pub mod location;
+
 pub mod matcher;
 pub mod token;
-use crate::errors::*;
-use location::*;
+pub mod errors;
+use errors::*;
+use crate::location::*;
 use matcher::*;
 use queues::*;
 use std::iter::Peekable;

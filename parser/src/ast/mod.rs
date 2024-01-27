@@ -1,3 +1,12 @@
+use crate::location::Location;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Located<T =()> {
+    pub l_location: Location,
+    pub r_location: Location,
+    pub node: T
+}
+
 #[derive(Clone, Debug)]
 pub enum Algorithm {
     Body(Vec<FileLine>),
@@ -25,12 +34,14 @@ pub enum Statements {
     SimpleStatements(Vec<SimpleStatement>),
 }
 
+pub type OneLineStatement = Located<OneLineStatementKind>;
+
 #[derive(Clone, Debug)]
-pub enum OneLineStatement {
+pub enum OneLineStatementKind {
     SubProgram {
         sp_name: String,
         args: Vec<Box<Expression>>,
-        label_to: String
+        label_to: String,
     },
     Loop {
         initial_value: Expression,
@@ -47,20 +58,25 @@ pub enum OneLineStatement {
     },
     Exit,
     Return,
-    UnconditionalJump { label: String },
+    UnconditionalJump { label: String},
 }
 
+pub type SimpleStatement = Located<SimpleStatementKind>;
+
+
 #[derive(Clone, Debug)]
-pub enum SimpleStatement {
-    Assign { lhs: Expression, rhs: Expression },
-    Send { lhs: Expression, rhs: Expression },
-    Exchange { lhs: Expression, rhs: Expression },
-    Expression { expression: Expression },
+pub enum SimpleStatementKind {
+    Assign { lhs: Expression, rhs: Expression},
+    Send { lhs: Expression, rhs: Expression},
+    Exchange { lhs: Expression, rhs: Expression},
+    Expression { expression: Expression},
 
 }
 
+pub type Expression = Located<ExpressionKind>;
+
 #[derive(Clone, Debug)]
-pub enum Expression {
+pub enum ExpressionKind {
     Null,
     Float {
         value: f64,
