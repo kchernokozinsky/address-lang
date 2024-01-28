@@ -19,7 +19,7 @@ lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_file("examples/loop/loop_list_squaring.adl");
+    let test = read_file("examples/list/list_no_syntax_sugar.adl");
     let mut env = Environment::new();
     env.add_function("Print", Value::Function { function: print_ });
     let lexer = Lexer::new(&test);

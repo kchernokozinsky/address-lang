@@ -1,0 +1,21 @@
+# head address inizialization
+h = 0; 
+
+# associate addresses 
+'h = 10; ''h = 8; '''h = 25; ''''h = 4
+
+#fill elements with value
+'(h + 1) = "a"; 
+'('h + 1)   = "b"; 
+'(''h + 1)  = "c"; 
+'('''h + 1) = "d";
+
+i = 100; cur = h
+# iterate over elements and print its values
+L { 0, 1, 'cur != null => i} end end
+    
+    P { 'i == 0} | cur = 'cur
+    
+    Print { "element ", 'i, ": ", '(cur + 1) } 
+
+end ...

@@ -1,0 +1,34 @@
+# head address inizialization
+l1 = 0; 
+l2 = 40;
+
+# associate l1 addresses 
+'l1 = 10;
+
+# associate l2 addresses 
+'l2 = 110; ''l2 = 18;
+
+#fill elements h_a with values
+'(l1 + 1)    = "a"; 
+'('l1 + 1)   = "b"; 
+
+#fill elements h_b with values
+'(l2 + 1)    = "c"; 
+'('l2 + 1)   = "d"; 
+'(''l2 + 1)  = "e"; 
+
+
+# concatenate l1 and l2 lists
+''l1 = l2
+
+# remove 2nd element from l1
+''l1 = '''l1
+
+# find element by value
+cur = l1
+L { 0, 1, 'cur != null => i} end end
+    
+    P { 'i == 0} | cur = 'cur
+    P { '(cur + 1) == "d" } Print { "element 'd' has found, its index is ", 'i } |
+
+end...

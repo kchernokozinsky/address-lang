@@ -1,0 +1,22 @@
+# inizialization of list with head 'l1'
+l1 = ["a", "b"];
+
+# inizialization of list with head 'l2'
+l2 = ["k", "l", "c", "d"];
+
+# concatenate l1 and l2 lists
+''l1 = l2
+
+# remove 2nd element from l1
+''l1 = '''l1
+
+# find element by value
+
+cur = l1
+L { 0, 1, 'cur != null => i} end end
+    
+    P { 'i == 0} | cur = 'cur
+    
+    P { '(cur + 1) == "l" } Print { "element ", 'i, ": ", '(cur + 1) } |
+
+end...

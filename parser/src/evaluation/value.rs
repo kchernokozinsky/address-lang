@@ -34,6 +34,20 @@ impl Value {
         Ok(Value::Int{value: lv_ + rv_})
     }
 
+    pub fn and(lv: Value, rv: Value) -> Result<Value, String> {
+        let lv_ = match lv {
+            Value::Bool { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        let rv_ = match rv {
+            Value::Bool { value } => value,
+            _ => return Err(format!("{:?} and {:?} are not compatible", lv, rv))
+        };
+
+        Ok(Value::Bool{value: lv_ & rv_})
+    }
+
     pub fn mul(lv: Value, rv: Value) -> Result<Value, String> {
         let lv_ = match lv {
             Value::Int { value } => value,

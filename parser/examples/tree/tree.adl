@@ -1,0 +1,25 @@
+# tree inizialization
+root = ["root_value", node1, node2]
+node1 = ["root_value", null, null]
+node2 = ["root_value", null, null]
+
+# Start of Tree Traversal
+i_a = 100; cur_a = root
+L { 0, 1, 'cur_a != null => i_a} end end
+    
+    P { 'i_a == 0} Print {'(cur_a + 1)}| 
+    cur_a = 'cur_a
+    P { '(cur_a + 1) != null } @k | @ a
+    
+    k ... 
+        i_b = 101; cur_b = '(cur_a + 1)
+        # iterate over sub list elements and print its values
+        L { 0, 1, 'cur_b != null => i_b} a a 
+            P { 'i_b == 0} | cur_b = 'cur_b
+            Print { "--sub_element: ", 'i_b, ": ", '(cur_b + 1) } 
+    a ... 
+    
+    Print { "element ", 'i_a, ": ", '(cur_a + 1) } 
+
+end ...
+
