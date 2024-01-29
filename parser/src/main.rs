@@ -20,7 +20,7 @@ lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_file("examples/sum_test.adl");
+    let test = read_file("examples/list/list.adl");
     let mut env = RuntimeContext::new();
     env.add_function("Print", Value::new_function(print_));
     let lexer = Lexer::new(&test);
@@ -35,5 +35,6 @@ fn main() {
 
     let mut  compiler = Evaluator::new(lines, env);
     let result = compiler.eval();
+    print!("{:?}", result)
 }
 

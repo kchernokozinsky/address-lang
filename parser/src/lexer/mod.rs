@@ -145,6 +145,7 @@ impl<'a> Lexer<'a> {
             "and" => TokenKind::And,
             "SP" => TokenKind::SubProgram,
             "return" => TokenKind::Return,
+            "D" => TokenKind::Deref,
 
             s => TokenKind::Identifier(s.to_string()),
         };

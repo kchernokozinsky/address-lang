@@ -93,6 +93,9 @@ pub enum ExpressionKind {
     Var {
         name: String,
     },
+    List {
+        elements: Vec<Box<Expression>>,
+    },
     Call {
         function: String,
         args: Vec<Box<Expression>>,
@@ -128,5 +131,6 @@ pub enum BinaryOp {
 #[derive(Clone, Debug)]
 pub enum UnaryOp {
     Dereference,
+    MultipleDereference(Box<Expression>),
     Not,
 }

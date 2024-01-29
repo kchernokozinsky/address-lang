@@ -44,6 +44,7 @@ pub enum TokenKind {
     Loop,
     Predicate,
     SubProgram,
+    Deref, 
     At,
     Bang,
 
@@ -120,6 +121,7 @@ impl fmt::Display for TokenKind {
             Or => f.write_str("or"),
             Let => f.write_str("let"),
             Const => f.write_str("const"),
+            Deref => f.write_str("dereference"),
         }
     }
 }

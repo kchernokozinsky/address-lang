@@ -1,22 +1,11 @@
 # inizialization of list with head 'l1'
-l1 = ["a", "b"];
+l1 = ["a", "b", "c", "d", "e", "f", "g"];
+l2 = ["1", "2", "3", "4", "5", "6", "7"];
 
-# inizialization of list with head 'l2'
-l2 = ["k", "l", "c", "d"];
+'''l1 = l2
+L {0, 1, 7 => i} end end 
 
-# concatenate l1 and l2 lists
-''l1 = l2
+next = (D {l1, 'i} + 1)
+Print{'i, ": ", 'next}
 
-# remove 2nd element from l1
-''l1 = '''l1
-
-# find element by value
-
-cur = l1
-L { 0, 1, 'cur != null => i} end end
-    
-    P { 'i == 0} | cur = 'cur
-    
-    P { '(cur + 1) == "l" } Print { "element ", 'i, ": ", '(cur + 1) } |
-
-end...
+end ...

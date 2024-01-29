@@ -44,6 +44,19 @@ impl RuntimeContext {
         address
     }
 
+    pub fn allocate_list(&mut self, elements: Vec<Value>) -> i64 {
+        let mut addresses: (i64, i64) = self.generate_free_address_for_list_element(); 
+        let head = addresses.0;
+        for elem in elements {
+            self.write_to_address(addresses.0, Value::Null);
+            self.write_to_address(addresses.1, elem);
+            let next = self.generate_free_address_for_list_element();
+            self.write_to_address(addresses.0, Value::new_int(next.0));
+            addresses = next;
+        }
+        head
+    }
+
     pub fn write_to_address(&mut self, address: i64, value: Value) -> () {
         self.values_by_address.insert(address, value);
     }
@@ -69,5 +82,13 @@ impl RuntimeContext {
             address += 1;
         }
         address
+    }
+
+    fn generate_free_address_for_list_element(&self) -> (i64, i64) {
+        let mut address = 0;
+        while self.values_by_address.contains_key(&address) || self.values_by_address.contains_key(&(address + 1)) {
+            address += 1;
+        }
+        (address, address + 1)
     }
 }

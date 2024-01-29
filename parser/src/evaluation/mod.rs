@@ -1,13 +1,13 @@
 pub mod builtins;
-pub mod runtime_context;
 pub mod errors;
+pub mod runtime_context;
 pub mod value;
 
 use crate::ast::*;
 use crate::location::Location;
 use crate::typings::Type;
-use runtime_context::*;
 use errors::*;
+use runtime_context::*;
 use value::*;
 
 pub struct Evaluator {
@@ -516,6 +516,42 @@ impl Evaluator {
                                 ))
                             }
                         },
+                        UnaryOp::MultipleDereference(expression) => {
+                            match self.eval_expression(*expression.clone()) {
+                                Ok(value) => match value.extract_int() {
+                                    Ok(n) => {
+                                        match self
+                                            .derefence_n_times(
+                                                *expr.clone(),
+                                                n - 1,
+                                                lhs.l_location,
+                                                lhs.r_location,
+                                            )?
+                                            .extract_int()
+                                        {
+                                            Ok(address) => {
+                                                return self.assign_to_address(address, rhs)
+                                            }
+                                            Err(e) => {
+                                                return Err(EvaluationError::RuntimeError(
+                                                    lhs.l_location,
+                                                    lhs.r_location,
+                                                    RuntimeError::TypeError(e),
+                                                ))
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        return Err(EvaluationError::RuntimeError(
+                                            expr.l_location,
+                                            expr.r_location,
+                                            RuntimeError::TypeError(e),
+                                        ))
+                                    }
+                                },
+                                Err(e) => return Err(e),
+                            };
+                        }
                     },
                     ExpressionKind::BinaryOp { .. } => {
                         match self.eval_expression(lhs.clone())?.extract_int() {
@@ -528,6 +564,18 @@ impl Evaluator {
                                 ))
                             }
                         }
+                    }
+                    ExpressionKind::List { .. } => {
+                        match self.eval_expression(lhs.clone())?.extract_int() {
+                            Ok(address) => return self.assign_to_address(address, rhs),
+                            Err(e) => {
+                                return Err(EvaluationError::RuntimeError(
+                                    lhs.l_location,
+                                    lhs.r_location,
+                                    RuntimeError::TypeError(e),
+                                ))
+                            }
+                        };
                     }
                 }
             }
@@ -751,11 +799,83 @@ impl Evaluator {
                         Err(e) => return Err(e),
                     };
                 }
+                UnaryOp::MultipleDereference(expression) => {
+                    match self.eval_expression(*expression.clone()) {
+                        Ok(value) => match value.extract_int() {
+                            Ok(n) => {
+                                return self.derefence_n_times(
+                                    *expr,
+                                    n,
+                                    expression.l_location,
+                                    expression.r_location,
+                                )
+                            }
+                            Err(e) => {
+                                return Err(EvaluationError::RuntimeError(
+                                    expr.l_location,
+                                    expr.r_location,
+                                    RuntimeError::TypeError(e),
+                                ))
+                            }
+                        },
+                        Err(e) => return Err(e),
+                    };
+                }
             },
             ExpressionKind::Bool { value } => Ok(Value::new_bool(value)),
             ExpressionKind::String { value } => Ok(Value::new_string(value)),
             ExpressionKind::Float { value } => Ok(Value::new_float(value)),
             ExpressionKind::Null => Ok(Value::Null),
+            ExpressionKind::List { elements } => {
+                let mut v_elements = vec![];
+                for e in elements {
+                    v_elements.push(self.eval_expression(*e)?)
+                }
+                Ok(Value::new_int(self.context.allocate_list(v_elements)))
+            }
+        }
+    }
+
+    fn derefence_n_times(
+        &mut self,
+        expression: Expression,
+        n: i64,
+        l_location: Location,
+        r_location: Location,
+    ) -> Result<Value, EvaluationError> {
+        let val = self.eval_expression(expression.clone())?;
+        if n == 0 {
+            return Ok(val);
+        };
+        let mut address = match val.extract_int() {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(EvaluationError::RuntimeError(
+                    expression.l_location,
+                    expression.r_location,
+                    RuntimeError::TypeError(e),
+                ))
+            }
+        };
+
+        let mut i = 1;
+        loop {
+            let temp = self.context.read_from_address(address);
+            if i >= n {
+                return Ok(temp.clone());
+            }
+
+            address = match temp.extract_int() {
+                Ok(v) => v,
+                Err(e) => {
+                    return Err(EvaluationError::RuntimeError(
+                        l_location,
+                        r_location,
+                        RuntimeError::TypeError(e),
+                    ))
+                }
+            };
+            i+=1;
         }
     }
 }
