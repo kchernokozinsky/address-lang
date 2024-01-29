@@ -1,21 +1,22 @@
-alpha = 1;
-pi = 0 ;
-E = 5;
+'E = 5;
+
+alpha = 2;
 beta = 20;
 
-L {1 , 1, E => pi } end1 eval 
+L {1 , 1, 'E => pi } end1 eval 
     address = alpha + 'pi; val = 'pi;
     val => address
 end1... 
 
+
 eval ...
-L {1 , 1, E => pi } end2 print 
+L {1 , 1, 'E => pi } end2 print 
     a = '(alpha + 'pi)
      a * a => beta + 'pi
 end2 ...
 
 print...
-L {1 , 1, E => pi } fin fin 
+L {1 , 1, 'E => pi } fin fin 
     original = '(alpha + 'pi); powed = '(beta + 'pi);
     Print{"x = ", original, ", x^2 = ", powed}
 fin...

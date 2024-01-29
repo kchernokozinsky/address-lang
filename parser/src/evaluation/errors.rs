@@ -1,41 +1,102 @@
-use crate::location::Location;
 use crate::evaluation::*;
+use crate::location::Location;
+use crate::typings::Type;
+
+#[derive(Debug)]
+pub enum ValueError {
+    IncompatibleTypes {
+        operation: String,
+        lhs_type: Type,
+        lhs_value: String,
+        rhs_type: Type,
+        rhs_value: String,
+    },
+    UnexpectedType {
+        expected_type: Type,
+        actual_type: Type,
+        actual_value: String,
+    }, // ... other error types can be added here ...
+    _UnexpectedType {
+        expected_types: Vec<Type>,
+        actual_type: Type,
+        actual_value: String,
+    },
+}
+
+impl std::fmt::Display for ValueError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ValueError::IncompatibleTypes {
+                operation,
+                lhs_type,
+                lhs_value,
+                rhs_type,
+                rhs_value,
+            } => write!(
+                f,
+                "Incompatible types for '{}': ({}: {}) and ({}: {})",
+                operation, lhs_type, lhs_value, rhs_type, rhs_value
+            ),
+            ValueError::UnexpectedType {
+                expected_type,
+                actual_type,
+                actual_value,
+            } => write!(
+                f,
+                "Expect type '{}', but actual : ({}: {})",
+                expected_type, actual_type, actual_value
+            ),
+            ValueError::_UnexpectedType { expected_types, actual_type, actual_value } => write!(
+                f,
+                "Expect types '{:?}', but actual : ({}: {})",
+                expected_types, actual_type, actual_value
+            ),
+            // ... handle other errors ...
+        }
+    }
+}
+
+impl std::error::Error for ValueError {}
 
 pub enum RuntimeError {
-    NullReference(Location, Location),
-    DivisionByZero(Location, Location),
-    TypeError(Location, Location, String),
-    IndexOutOfBounds(Location, Location, usize, usize),
-    VariableNotFound(Location, Location, String),
-    LabelNotFound(Location, Location, String),
-    FunctionNotFound(Location, Location, String),
-    InvalidArgument(Location, Location, String),
-    FunctionCallError(Location, Location, String, String),
+    NullReference,
+    DivisionByZero,
+    TypeError(ValueError),
+    IndexOutOfBounds(usize, usize),
+    VariableNotFound(String),
+    LabelNotFound(String),
+    FunctionNotFound(String),
+    InvalidArgument(String),
+    FunctionCallError(String, String),
     // ...other runtime errors
 }
 
 impl std::fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RuntimeError::DivisionByZero(left_loc, right_loc) => 
-                write!(f, "Division by zero error\n{:?} ... {:?}", left_loc, right_loc),
-            RuntimeError::NullReference(left_loc, right_loc) => 
-                write!(f, "Null reference error\n{:?} ... {:?}", left_loc, right_loc),
-            RuntimeError::TypeError(left_loc, right_loc, message) => 
-                write!(f, "Type error\n{:?} ... {:?}\ndetailed info: {}", left_loc, right_loc, message),
-            RuntimeError::IndexOutOfBounds(left_loc, right_loc, index, length) => 
-                write!(f, "Index out of bounds error\n{:?} ... {:?}\ndetailed info: index {} in a collection of length {}", left_loc, right_loc, index, length),
-            RuntimeError::VariableNotFound(left_loc, right_loc, var_name) => 
-                write!(f, "Variable '{}' not found\n{:?} ... {:?}", var_name, left_loc, right_loc),
-            RuntimeError::FunctionNotFound(left_loc, right_loc, func_name) => 
-                write!(f, "Function '{}' not found\n{:?} ... {:?}", func_name, left_loc, right_loc),
-            RuntimeError::InvalidArgument(left_loc, right_loc, arg_desc) => 
-                write!(f, "Invalid argument error\n{:?} ... {:?}: {}", left_loc, right_loc, arg_desc),
-            RuntimeError::LabelNotFound(left_loc, right_loc, label_name) => 
-            write!(f, "Label '{}' not found\n{:?} ... {:?}", label_name, left_loc, right_loc),
-            RuntimeError::FunctionCallError(left_loc, right_loc, func_name, error) => 
-            write!(f, "Function '{}' raise error: '{}'\n{:?} ... {:?}", func_name, error, left_loc, right_loc),
-            // ...other runtime errors
+            RuntimeError::NullReference => write!(f, "Null reference error"),
+            RuntimeError::DivisionByZero => write!(f, "Division by zero error"),
+            RuntimeError::TypeError(error) => write!(f, "Type error: {}", error),
+            RuntimeError::IndexOutOfBounds(index, length) => write!(
+                f,
+                "Index out of bounds error: index {} in a collection of length {}",
+                index, length
+            ),
+            RuntimeError::VariableNotFound(var_name) => {
+                write!(f, "Variable '{}' not found", var_name)
+            }
+            RuntimeError::LabelNotFound(label_name) => {
+                write!(f, "Label '{}' not found", label_name)
+            }
+            RuntimeError::FunctionNotFound(func_name) => {
+                write!(f, "Function '{}' not found", func_name)
+            }
+            RuntimeError::InvalidArgument(arg_desc) => {
+                write!(f, "Invalid argument error: {}", arg_desc)
+            }
+            RuntimeError::FunctionCallError(func_name, error) => {
+                write!(f, "Function '{}' raised error: '{}'", func_name, error)
+            }
         }
     }
 }
@@ -52,7 +113,7 @@ impl std::fmt::Debug for RuntimeError {
 pub enum EvaluationError {
     SyntaxError(Location, Location, String),
     TypeError(Location, Location, String),
-    RuntimeError(RuntimeError), // Integrating RuntimeError
+    RuntimeError(Location, Location, RuntimeError), // Integrating RuntimeError
     UnhandledStatement(Location, Location, SimpleStatementKind),
     UnhandledFormula(Location, Location, OneLineStatementKind),
     UnhandledExpression(Location, Location, ExpressionKind),
@@ -63,20 +124,41 @@ pub enum EvaluationError {
 impl std::fmt::Display for EvaluationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EvaluationError::SyntaxError(left_loc, right_loc, message) => 
-                write!(f, "Syntax error between {:?} and {:?}: {}", left_loc, right_loc, message),
-            EvaluationError::TypeError(left_loc, right_loc, message) => 
-                write!(f, "Type error between {:?} and {:?}: {}", left_loc, right_loc, message),
-            EvaluationError::RuntimeError(runtime_error) => 
-                write!(f, "Runtime Error\n{}", runtime_error),
-            EvaluationError::UnhandledStatement(left_loc, right_loc, kind) => 
-                write!(f, "Unhandled statement between {:?} and {:?}: {:?}", left_loc, right_loc, kind),
-            EvaluationError::UnhandledExpression(left_loc, right_loc, kind) => 
-                write!(f, "Unhandled expression between {:?} and {:?}: {:?}", left_loc, right_loc, kind),
-            EvaluationError::UnhandledBinaryOperation(left_loc, right_loc, kind) => 
-            write!(f, "Unhandled Binary Operation between {:?} and {:?}: {:?}", left_loc, right_loc, kind),
-            EvaluationError::UnhandledFormula(left_loc, right_loc, kind) => 
-            write!(f, "Unhandled statement between {:?} and {:?}: {:?}", left_loc, right_loc, kind),
+            EvaluationError::SyntaxError(left_loc, right_loc, message) => write!(
+                f,
+                "Syntax error between {:?} and {:?}: {}",
+                left_loc, right_loc, message
+            ),
+            EvaluationError::TypeError(left_loc, right_loc, message) => write!(
+                f,
+                "Type error between {:?} and {:?}: {}",
+                left_loc, right_loc, message
+            ),
+            EvaluationError::RuntimeError(left_loc, right_loc, runtime_error) => write!(
+                f,
+                "Runtime Error between {:?} and {:?}: {}",
+                left_loc, right_loc, runtime_error
+            ),
+            EvaluationError::UnhandledStatement(left_loc, right_loc, kind) => write!(
+                f,
+                "Unhandled statement between {:?} and {:?}: {:?}",
+                left_loc, right_loc, kind
+            ),
+            EvaluationError::UnhandledExpression(left_loc, right_loc, kind) => write!(
+                f,
+                "Unhandled expression between {:?} and {:?}: {:?}",
+                left_loc, right_loc, kind
+            ),
+            EvaluationError::UnhandledBinaryOperation(left_loc, right_loc, kind) => write!(
+                f,
+                "Unhandled Binary Operation between {:?} and {:?}: {:?}",
+                left_loc, right_loc, kind
+            ),
+            EvaluationError::UnhandledFormula(left_loc, right_loc, kind) => write!(
+                f,
+                "Unhandled statement between {:?} and {:?}: {:?}",
+                left_loc, right_loc, kind
+            ),
             // ...other errors
         }
     }

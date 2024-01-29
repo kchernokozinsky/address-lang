@@ -3,6 +3,7 @@ pub mod evaluation;
 pub mod lexer;
 pub mod location;
 pub mod util;
+pub mod typings;
 
 use lexer::*;
 use util::*;
@@ -10,7 +11,7 @@ use ast::*;
 use builtins::*;
 use evaluation::*;
 
-use evaluation::environment::Environment;
+use evaluation::runtime_context::RuntimeContext;
 use evaluation::value::*;
 #[macro_use]
 extern crate lalrpop_util;
@@ -19,9 +20,9 @@ lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_file("examples/list/list_no_syntax_sugar.adl");
-    let mut env = Environment::new();
-    env.add_function("Print", Value::Function { function: print_ });
+    let test = read_file("examples/sum_test.adl");
+    let mut env = RuntimeContext::new();
+    env.add_function("Print", Value::new_function(print_));
     let lexer = Lexer::new(&test);
     // for item in lexer {
     //     println!("{:?}", item);
@@ -34,6 +35,5 @@ fn main() {
 
     let mut  compiler = Evaluator::new(lines, env);
     let result = compiler.eval();
-    println!("{:?}", result);
 }
 

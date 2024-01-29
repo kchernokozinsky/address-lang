@@ -1,26 +1,28 @@
 pub mod builtins;
-pub mod environment;
+pub mod runtime_context;
 pub mod errors;
 pub mod value;
+
 use crate::ast::*;
 use crate::location::Location;
-use environment::*;
+use crate::typings::Type;
+use runtime_context::*;
 use errors::*;
 use value::*;
 
 pub struct Evaluator {
     lines: Vec<FileLine>,
-    env: Environment,
+    context: RuntimeContext,
     current_line: usize,
     to_stop: bool,
     is_jumped: bool,
 }
 
 impl Evaluator {
-    pub fn new(lines: Vec<FileLine>, env: Environment) -> Evaluator {
+    pub fn new(lines: Vec<FileLine>, env: RuntimeContext) -> Evaluator {
         let mut evaluator = Evaluator {
             lines,
-            env,
+            context: env,
             current_line: 0,
             to_stop: false,
             is_jumped: false,
@@ -37,7 +39,7 @@ impl Evaluator {
         for (index, line) in self.lines.iter().enumerate() {
             let labels = line.labels();
             for label in labels {
-                self.env.add_label(label.to_string(), index);
+                self.context.register_label(label.to_string(), index);
             }
         }
     }
@@ -106,45 +108,38 @@ impl Evaluator {
     ) -> Result<(), EvaluationError> {
         let line_from = self.current_line + 1;
         let line_to = *self
-            .env
-            .get_line_by_label(label_until)
+            .context
+            .lookup_line_by_label(label_until)
             .expect(format!("label '{}' is not declared!", &label_until).as_str());
 
-        let line_to_jump = match self.env.get_line_by_label(label_to) {
+        let line_to_jump = match self.context.lookup_line_by_label(label_to) {
             Some(line) => *line,
             None => {
-                return Err(EvaluationError::RuntimeError(RuntimeError::LabelNotFound(
+                return Err(EvaluationError::RuntimeError(
                     l_location,
                     r_location,
-                    label_to.to_string(),
-                )));
+                    RuntimeError::LabelNotFound(label_to.to_string()),
+                ));
             }
         };
         let mut it_just_set: bool = true;
         self.current_line = line_from;
         loop {
-            let mut it_value = match self.env.get_value_by_address(iterator) {
-                Ok(v) => match v {
-                    Value::Int { value } => *value,
-                    _ => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                            l_location,
-                            r_location,
-                            format!("value '{}' must be an integer", v),
-                        )))
-                    }
-                },
-                Err(_) => {
-                    return Err(EvaluationError::RuntimeError(RuntimeError::NullReference(
-                        l_location, r_location,
-                    )))
+            let mut it_value = match self.context.read_from_address(iterator) {
+                Value::Int(value) => *value,
+                v => {
+                    return Err(EvaluationError::RuntimeError(
+                        l_location,
+                        r_location,
+                        RuntimeError::TypeError(Value::raise_unexpected_type_error(Type::Int, &v)),
+                    ))
                 }
             };
             // increment iterator
             if !it_just_set {
                 it_value = it_value + step;
-                self.env
-                    .fill_address(iterator, Value::Int { value: it_value });
+                self.context
+                    .write_to_address(iterator, Value::new_int(it_value));
             } else {
                 it_just_set = false
             }
@@ -156,16 +151,13 @@ impl Evaluator {
                     let cond = {
                         match self.eval_expression(_cond) {
                             Ok(v) => match v {
-                                Value::Bool { value } => value,
+                                Value::Bool(value) => value,
                                 _ => {
                                     return Err(EvaluationError::RuntimeError(
+                                        l_location,
+                                        r_location,
                                         RuntimeError::TypeError(
-                                            l_location,
-                                            r_location,
-                                            format!(
-                                                "expression '{:?}' must be boolean",
-                                                condition.unwrap()
-                                            ),
+                                            Value::raise_unexpected_type_error(Type::Bool, &v),
                                         ),
                                     ))
                                 }
@@ -182,7 +174,7 @@ impl Evaluator {
                     }
                 }
 
-                Value::Int { value } => {
+                Value::Int(value) => {
                     if it_value <= value {
                     } else {
                         self.is_jumped = true;
@@ -192,14 +184,14 @@ impl Evaluator {
                 }
 
                 _ => {
-                    return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                    return Err(EvaluationError::RuntimeError(
                         l_location,
                         r_location,
-                        format!(
-                            "Expression '{:?}' is not an Integer or Bool",
-                            last_value_or_condition
-                        ),
-                    )))
+                        RuntimeError::TypeError(Value::_raise_unexpected_type_error(
+                            vec![Type::Int, Type::Bool],
+                            &last_value_or_condition,
+                        )),
+                    ))
                 }
             }
 
@@ -249,52 +241,45 @@ impl Evaluator {
                 label_to,
             } => {
                 let l_it_adrress = match self.eval_expression(iterator.clone()) {
-                    Ok(v) => match v {
-                        Value::Int { value } => value,
-                        _ => {
-                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                    Ok(v) => match v.extract_int() {
+                        Ok(v) => v,
+                        Err(e) => {
+                            return Err(EvaluationError::RuntimeError(
                                 iterator.l_location,
                                 iterator.r_location,
-                                format!(
-                                    "Expression '{:?}' must be address (Integer) or Variable",
-                                    &iterator
-                                ),
-                            )));
+                                RuntimeError::TypeError(e),
+                            ))
                         }
                     },
                     Err(e) => return Err(e),
                 };
 
                 let l_init_value = match self.eval_expression(initial_value.clone()) {
-                    Ok(v) => match v {
-                        Value::Int { value } => value,
-                        _ => {
-                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                    Ok(v) => match v.extract_int() {
+                        Ok(v) => v,
+                        Err(e) => {
+                            return Err(EvaluationError::RuntimeError(
                                 initial_value.l_location,
                                 initial_value.r_location,
-                                format!("Expression '{:?}' must be Integer", &initial_value),
-                            )));
+                                RuntimeError::TypeError(e),
+                            ))
                         }
                     },
                     Err(e) => return Err(e),
                 };
 
-                self.env.fill_address(
-                    l_it_adrress,
-                    Value::Int {
-                        value: l_init_value,
-                    },
-                );
+                self.context
+                    .write_to_address(l_it_adrress, Value::new_int(l_init_value));
 
                 let l_step = match self.eval_expression(step.clone()) {
-                    Ok(v) => match v {
-                        Value::Int { value } => value,
-                        _ => {
-                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                    Ok(v) => match v.extract_int() {
+                        Ok(v) => v,
+                        Err(e) => {
+                            return Err(EvaluationError::RuntimeError(
                                 step.l_location,
                                 step.r_location,
-                                format!("Expression '{:?}' must be Integer", &step),
-                            )))
+                                RuntimeError::TypeError(e),
+                            ))
                         }
                     },
                     Err(e) => return Err(e),
@@ -304,20 +289,20 @@ impl Evaluator {
                 let l_last_value_or_condition: Value =
                     match self.eval_expression(last_value_or_condition.clone()) {
                         Ok(v) => match v {
-                            Value::Int { value } => Value::Int { value },
-                            Value::Bool { value } => {
+                            Value::Int(value) => Value::Int(value),
+                            Value::Bool(value) => {
                                 cond = Some(last_value_or_condition.clone());
-                                Value::Bool { value }
+                                Value::Bool(value)
                             }
-                            _ => {
-                                return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                            v => {
+                                return Err(EvaluationError::RuntimeError(
                                     last_value_or_condition.l_location,
                                     last_value_or_condition.r_location,
-                                    format!(
-                                        "Expression '{:?}' must be Integer or Bool",
-                                        &last_value_or_condition
-                                    ),
-                                )))
+                                    RuntimeError::TypeError(Value::_raise_unexpected_type_error(
+                                        vec![Type::Int, Type::Bool],
+                                        &v,
+                                    )),
+                                ))
                             }
                         },
                         Err(e) => return Err(e),
@@ -341,13 +326,16 @@ impl Evaluator {
             } => {
                 let cond = match self.eval_expression(condition.clone()) {
                     Ok(value) => match value {
-                        Value::Bool { value } => value,
-                        _ => {
-                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        Value::Bool(value) => value,
+                        v => {
+                            return Err(EvaluationError::RuntimeError(
                                 condition.l_location,
                                 condition.r_location,
-                                format!("Expression '{:?}' must be Integer or Bool", &condition),
-                            )))
+                                RuntimeError::TypeError(Value::_raise_unexpected_type_error(
+                                    vec![Type::Int, Type::Bool],
+                                    &v,
+                                )),
+                            ))
                         }
                     },
                     Err(e) => return Err(e),
@@ -360,18 +348,18 @@ impl Evaluator {
             }
             OneLineStatementKind::Exit => Ok(self.stop_eval()),
             OneLineStatementKind::UnconditionalJump { label } => {
-                match self.env.get_line_by_label(&label) {
+                match self.context.lookup_line_by_label(&label) {
                     Some(line) => {
                         self.is_jumped = true;
                         self.current_line = line.clone();
                         Ok(())
                     }
                     None => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::LabelNotFound(
+                        return Err(EvaluationError::RuntimeError(
                             statement.l_location,
                             statement.r_location,
-                            label,
-                        )))
+                            RuntimeError::LabelNotFound(label),
+                        ))
                     }
                 }
             }
@@ -392,6 +380,55 @@ impl Evaluator {
         }
     }
 
+    fn assign_to_dereference(
+        &mut self,
+        lhs: &Located<ExpressionKind>,
+        rhs: &Located<ExpressionKind>,
+    ) -> Result<(), EvaluationError> {
+        let address = match self.eval_expression(lhs.clone())?.extract_int() {
+            Ok(address) => address,
+            Err(e) => {
+                return Err(EvaluationError::RuntimeError(
+                    lhs.l_location,
+                    lhs.r_location,
+                    RuntimeError::TypeError(e),
+                ))
+            }
+        };
+
+        let value = self.eval_expression(rhs.clone())?;
+
+        Ok(self.context.write_to_address(address, value))
+    }
+
+    fn assign_to_variable(
+        &mut self,
+        variable: &String,
+        rhs: &Located<ExpressionKind>,
+    ) -> Result<(), EvaluationError> {
+        let address = match self.eval_expression(rhs.clone())?.extract_int() {
+            Ok(address) => address,
+            Err(e) => {
+                return Err(EvaluationError::RuntimeError(
+                    rhs.l_location,
+                    rhs.r_location,
+                    RuntimeError::TypeError(e),
+                ))
+            }
+        };
+
+        Ok(self.context.add_variable(variable, address))
+    }
+
+    fn assign_to_address(
+        &mut self,
+        address: i64,
+        rhs: &Located<ExpressionKind>,
+    ) -> Result<(), EvaluationError> {
+        let value = self.eval_expression(rhs.clone())?;
+        Ok(self.context.write_to_address(address, value))
+    }
+
     fn eval_statement(&mut self, statement: SimpleStatement) -> Result<(), EvaluationError> {
         let node = &statement.node;
         match node {
@@ -404,86 +441,110 @@ impl Evaluator {
             }
 
             SimpleStatementKind::Assign { lhs, rhs } => {
-                let lhs_node = &lhs.node;
-                let r = match self.eval_expression(rhs.clone()) {
-                    Ok(v) => v,
-                    Err(e) => return Err(e),
-                };
-                let l: Value = match lhs_node.clone() {
-                    ExpressionKind::Null => todo!(),
-                    ExpressionKind::Float { .. } => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                            lhs.l_location,
-                            lhs.r_location,
-                            format!("Expression '{:?}' must be address", &lhs),
-                        )))
-                    }
-                    ExpressionKind::Bool { .. } => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                            lhs.l_location,
-                            lhs.r_location,
-                            format!("Expression '{:?}' must be address", &lhs),
-                        )))
-                    }
-                    ExpressionKind::Int { .. } => self.eval_expression(lhs.clone())?,
-                    ExpressionKind::String { .. } => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                            lhs.l_location,
-                            lhs.r_location,
-                            format!("Expression '{:?}' must be address", &lhs),
-                        )))
-                    }
-                    ExpressionKind::Var { .. } => {
-                        if let Value::Int { value } = r {
-                            return match self.bind(&lhs, value) {
-                                Ok(v) => Ok(v),
-                                Err(_) => {
-                                    return Err(EvaluationError::RuntimeError(
-                                        RuntimeError::NullReference(lhs.l_location, lhs.r_location),
-                                    ))
-                                }
-                            };
-                        } else {
-                            return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                                lhs.l_location,
-                                lhs.r_location,
-                                format!(
-                                    "Expression '{:?}' must be address",
-                                    &lhs // TO CHECK
-                                ),
-                            )));
-                        }
-                    }
-                    ExpressionKind::Call { .. } => self.eval_expression(lhs.clone())?,
-                    ExpressionKind::UnaryOp { op, expr } => match op {
-                        UnaryOp::Dereference => self.eval_expression(*expr)?,
-                        UnaryOp::Not => self.eval_expression(lhs.clone())?,
-                    },
-                    ExpressionKind::BinaryOp { .. } => self.eval_expression(lhs.clone())?,
-                };
+                let lhs_node: &ExpressionKind = &lhs.node;
 
-                match l {
-                    Value::Int { value } => Ok(self.env.fill_address(value, r)),
-                    _ => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                //
+                //decide which strategy for evaluation, to choose
+                //
+                match lhs_node {
+                    ExpressionKind::Null => {
+                        return Err(EvaluationError::RuntimeError(
                             lhs.l_location,
                             lhs.r_location,
-                            format!("Expression '{:?}' must be address", &lhs),
-                        )))
+                            RuntimeError::TypeError(ValueError::UnexpectedType {
+                                expected_type: Type::Int,
+                                actual_type: Type::Null,
+                                actual_value: format!("{}", Value::Null),
+                            }),
+                        ))
+                    }
+                    ExpressionKind::Float { value } => {
+                        return Err(EvaluationError::RuntimeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            RuntimeError::TypeError(ValueError::UnexpectedType {
+                                expected_type: Type::Int,
+                                actual_type: Type::Float,
+                                actual_value: format!("{}", value),
+                            }),
+                        ))
+                    }
+                    ExpressionKind::Bool { value } => {
+                        return Err(EvaluationError::RuntimeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            RuntimeError::TypeError(ValueError::UnexpectedType {
+                                expected_type: Type::Int,
+                                actual_type: Type::Bool,
+                                actual_value: format!("{}", value),
+                            }),
+                        ))
+                    }
+                    ExpressionKind::Int { value } => return self.assign_to_address(*value, rhs),
+                    ExpressionKind::String { value } => {
+                        return Err(EvaluationError::RuntimeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            RuntimeError::TypeError(ValueError::UnexpectedType {
+                                expected_type: Type::Int,
+                                actual_type: Type::String,
+                                actual_value: format!("{}", value),
+                            }),
+                        ))
+                    }
+                    ExpressionKind::Var { name } => return self.assign_to_variable(name, rhs),
+                    ExpressionKind::Call { function, .. } => {
+                        return Err(EvaluationError::RuntimeError(
+                            lhs.l_location,
+                            lhs.r_location,
+                            RuntimeError::TypeError(ValueError::UnexpectedType {
+                                expected_type: Type::Int,
+                                actual_type: Type::Function,
+                                actual_value: format!("{}", function),
+                            }),
+                        ))
+                    }
+                    ExpressionKind::UnaryOp { op, expr } => match op {
+                        UnaryOp::Dereference => self.assign_to_dereference(expr, rhs),
+                        UnaryOp::Not => match self.eval_expression(lhs.clone())?.extract_int() {
+                            Ok(address) => self.assign_to_address(address, rhs),
+                            Err(e) => {
+                                return Err(EvaluationError::RuntimeError(
+                                    lhs.l_location,
+                                    lhs.r_location,
+                                    RuntimeError::TypeError(e),
+                                ))
+                            }
+                        },
+                    },
+                    ExpressionKind::BinaryOp { .. } => {
+                        match self.eval_expression(lhs.clone())?.extract_int() {
+                            Ok(address) => self.assign_to_address(address, rhs),
+                            Err(e) => {
+                                return Err(EvaluationError::RuntimeError(
+                                    lhs.l_location,
+                                    lhs.r_location,
+                                    RuntimeError::TypeError(e),
+                                ))
+                            }
+                        }
                     }
                 }
             }
 
             SimpleStatementKind::Send { lhs, rhs } => {
                 let address = match self.eval_expression(lhs.clone()) {
-                    Ok(Value::Int { value }) => value,
-                    _ => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                            lhs.l_location,
-                            lhs.r_location,
-                            format!("Expression '{:?}' must be address", &lhs),
-                        )))
-                    }
+                    Ok(v) => match v.extract_int() {
+                        Ok(v) => v,
+                        Err(e) => {
+                            return Err(EvaluationError::RuntimeError(
+                                lhs.l_location,
+                                lhs.r_location,
+                                RuntimeError::TypeError(e),
+                            ))
+                        }
+                    },
+                    Err(e) => return Err(e),
                 };
 
                 let value = match self.eval_expression(rhs.clone()) {
@@ -491,7 +552,7 @@ impl Evaluator {
                     Err(e) => return Err(e),
                 };
 
-                Ok(self.env.fill_address(address, value))
+                Ok(self.context.write_to_address(address, value))
             }
 
             _ => Err(EvaluationError::UnhandledStatement(
@@ -502,18 +563,10 @@ impl Evaluator {
         }
     }
 
-    fn bind(&mut self, lhs: &Expression, address: i64) -> Result<(), String> {
-        let node = &lhs.node;
-        match node {
-            ExpressionKind::Var { name } => Ok(self.env.add_variable(&name, address)),
-            _ => Err(format!("{:?} is not a variable", lhs)),
-        }
-    }
-
     fn eval_expression(&mut self, expression: Expression) -> Result<Value, EvaluationError> {
         let node = expression.node;
         match node {
-            ExpressionKind::Int { value } => Ok(Value::Int { value }),
+            ExpressionKind::Int { value } => Ok(Value::Int(value)),
             ExpressionKind::Call { function, args } => {
                 let mut vals = vec![];
 
@@ -524,41 +577,40 @@ impl Evaluator {
                     }
                 }
 
-                let v = match self.env.get_function(&function) {
+                let v = match self.context.get_function(&function) {
                     Ok(v) => v,
                     Err(_) => {
                         return Err(EvaluationError::RuntimeError(
-                            RuntimeError::FunctionNotFound(
-                                expression.l_location,
-                                expression.r_location,
-                                function,
-                            ),
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::FunctionNotFound(function),
                         ))
                     }
                 };
 
                 let func_name = function;
 
-                if let Value::Function { function } = v {
+                if let Value::Function(function) = v {
                     match function(vals) {
                         Ok(v) => Ok(v),
                         Err(e) => {
                             return Err(EvaluationError::RuntimeError(
-                                RuntimeError::FunctionCallError(
-                                    expression.l_location,
-                                    expression.r_location,
-                                    func_name,
-                                    e,
-                                ),
+                                expression.l_location,
+                                expression.r_location,
+                                RuntimeError::FunctionCallError(func_name, e),
                             ))
                         }
                     }
                 } else {
-                    Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                    Err(EvaluationError::RuntimeError(
                         expression.l_location,
                         expression.r_location,
-                        format!("'{}' isn`t  function", func_name),
-                    )))
+                        RuntimeError::TypeError(ValueError::UnexpectedType {
+                            expected_type: Type::Function,
+                            actual_type: Value::type_of(v),
+                            actual_value: format!("{}", v),
+                        }),
+                    ))
                 }
             }
 
@@ -574,85 +626,135 @@ impl Evaluator {
                 };
 
                 match op {
-                    BinaryOp::Sum => match Value::sum(lv, rv) {
+                    BinaryOp::Sum => match Value::sum(&lv, &rv) {
                         Ok(v) => Ok(v),
-                        Err(e) => Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        Err(e) => Err(EvaluationError::RuntimeError(
                             expression.l_location,
                             expression.r_location,
-                            e,
-                        ))),
+                            RuntimeError::TypeError(e),
+                        )),
                     },
-                    BinaryOp::Sub => match Value::sub(lv, rv) {
+                    BinaryOp::Sub => match Value::sub(&lv, &rv) {
                         Ok(v) => Ok(v),
-                        Err(e) => Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        Err(e) => Err(EvaluationError::RuntimeError(
                             expression.l_location,
                             expression.r_location,
-                            e,
-                        ))),
+                            RuntimeError::TypeError(e),
+                        )),
                     },
-                    BinaryOp::Mul => match Value::mul(lv, rv) {
+                    BinaryOp::Mul => match Value::mul(&lv, &rv) {
                         Ok(v) => Ok(v),
-                        Err(e) => Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        Err(e) => Err(EvaluationError::RuntimeError(
                             expression.l_location,
                             expression.r_location,
-                            e,
-                        ))),
+                            RuntimeError::TypeError(e),
+                        )),
                     },
-                    BinaryOp::EQ => Ok(Value::Bool { value: lv.eq(&rv) }),
-                    BinaryOp::NE => Ok(Value::Bool { value: lv.ne(&rv) }),
-                    BinaryOp::LT => Ok(Value::Bool { value: lv.lt(&rv) }),
-                    _ => Err(EvaluationError::UnhandledBinaryOperation(
-                        expression.l_location,
-                        expression.r_location,
-                        op,
-                    )),
+                    BinaryOp::EQ => match Value::eq(&lv, &rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
+                    BinaryOp::NE => match Value::ne(&lv, &rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
+                    BinaryOp::LT => match Value::lt(&lv, &rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
+                    BinaryOp::GT => match Value::gt(&lv, &rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
+                    BinaryOp::Div => match Value::div(&lv, &rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
+                    BinaryOp::Mod => todo!(),
+                    BinaryOp::And => match Value::and(lv, rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
+                    BinaryOp::Or => match Value::or(lv, rv) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(EvaluationError::RuntimeError(
+                            expression.l_location,
+                            expression.r_location,
+                            RuntimeError::TypeError(e),
+                        )),
+                    },
                 }
             }
 
-            ExpressionKind::Var { name } => match self.env.get_variable(&name) {
-                Ok(v) => Ok(v),
-                Err(_) => Err(EvaluationError::RuntimeError(
-                    RuntimeError::VariableNotFound(
-                        expression.l_location,
-                        expression.r_location,
-                        name,
-                    ),
-                )),
+            ExpressionKind::Var { name } => match self.context.get_variable_address(&name) {
+                Ok(v) => Ok(Value::new_int(v)),
+                Err(_) => Ok(Value::new_int(self.context.allocate_variable(&name)))
+                // Err(EvaluationError::RuntimeError(
+                //     expression.l_location,
+                //     expression.r_location,
+                //     RuntimeError::VariableNotFound(name),
+                // )),
             },
 
             ExpressionKind::UnaryOp { op, expr } => match op {
                 UnaryOp::Dereference => match self.eval_expression(*expr.clone()) {
-                    Ok(Value::Int { value }) => match self.env.get_value_by_address(value) {
-                        Ok(value) => Ok(value.clone()),
-                        _ => Ok(Value::Null),
-                    },
-                    _ => {
-                        return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
-                            expr.l_location,
-                            expr.r_location,
-                            format!("Expression '{:?}' must be address", &expr),
-                        )))
+                    Ok(v) => {
+                        match v.extract_int() {
+                            Ok(v) => return Ok(self.context.read_from_address(v).clone()),
+                            Err(e) => {
+                                return Err(EvaluationError::RuntimeError(
+                                    expr.l_location,
+                                    expr.r_location,
+                                    RuntimeError::TypeError(e),
+                                ))
+                            }
+                        };
                     }
+                    Err(e) => return Err(e),
                 },
                 UnaryOp::Not => {
                     match self.eval_expression(*expr.clone()) {
-                        Ok(value) => match value {
-                            Value::Bool { value } => return Ok(Value::Bool { value: !value }),
-                            _ => {
-                                return Err(EvaluationError::RuntimeError(RuntimeError::TypeError(
+                        Ok(value) => match value.extract_bool() {
+                            Ok(v) => return Ok(Value::new_bool(!v)),
+                            Err(e) => {
+                                return Err(EvaluationError::RuntimeError(
                                     expr.l_location,
                                     expr.r_location,
-                                    format!("Expression '{:?}' must be boolean", &expr),
-                                )))
+                                    RuntimeError::TypeError(e),
+                                ))
                             }
                         },
                         Err(e) => return Err(e),
                     };
                 }
             },
-            ExpressionKind::Bool { value } => Ok(Value::Bool { value }),
-            ExpressionKind::String { value } => Ok(Value::String { value }),
-            ExpressionKind::Float { value } => Ok(Value::Float { value }),
+            ExpressionKind::Bool { value } => Ok(Value::new_bool(value)),
+            ExpressionKind::String { value } => Ok(Value::new_string(value)),
+            ExpressionKind::Float { value } => Ok(Value::new_float(value)),
             ExpressionKind::Null => Ok(Value::Null),
         }
     }
