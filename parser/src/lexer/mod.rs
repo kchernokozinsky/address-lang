@@ -255,7 +255,7 @@ impl<'a> Lexer<'a> {
                                 }
                             } else {
                                 self.move_back();
-                                self.move_back();
+                                // self.move_back();
                                 return Some((start_loc, initial_t, self.loc()));
                             };
                         }
