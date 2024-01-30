@@ -1,9 +1,15 @@
-SP a {a, b, c, d} k
+'a = 5
+
+SP f {a, b} k
+
+k... Print {"address: ", b, ", value: ", 'b}
 
 !
 
-f ... null => a; null => c;
-a => c
+f ... null => c; null => d;
+
+'c => d
+Print {d}
 return
 
 # если перейти с помощью Формулы Вхождения, то будут инициализироваться переменные во внутреннем скоупе 

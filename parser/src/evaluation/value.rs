@@ -1,5 +1,5 @@
 use crate::evaluation::errors::ValueError;
-use std::fmt::{self, format};
+use std::fmt::{self};
 use crate::typings::Type;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]

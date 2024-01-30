@@ -8,6 +8,7 @@ pub enum Type {
     Int,
     Function,
     Error,
+    Unknown,
 }
 
 impl Display for Type {
@@ -20,6 +21,7 @@ impl Display for Type {
             Type::Bool => "bool",
             Type::Function => "function",
             Type::Error => "?",
+            Type::Unknown => "unknown",
         };
 
         write!(f, "{}", type_name)

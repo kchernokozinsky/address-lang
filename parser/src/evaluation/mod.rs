@@ -1,5 +1,6 @@
 pub mod builtins;
 pub mod errors;
+pub mod loop_;
 pub mod runtime_context;
 pub mod value;
 
@@ -14,8 +15,13 @@ pub struct Evaluator {
     lines: Vec<FileLine>,
     context: RuntimeContext,
     current_line: usize,
-    to_stop: bool,
-    is_jumped: bool,
+}
+
+pub enum StatementResult {
+    Continue,
+    FullStop,
+    LocalStop,
+    JumpTo(usize),
 }
 
 impl Evaluator {
@@ -24,8 +30,6 @@ impl Evaluator {
             lines,
             context: env,
             current_line: 0,
-            to_stop: false,
-            is_jumped: false,
         };
         evaluator.extract_labels();
         evaluator
@@ -44,35 +48,29 @@ impl Evaluator {
         }
     }
 
-    pub fn stop_eval(&mut self) {
-        self.to_stop = true
-    }
-
     pub fn eval(&mut self) -> Result<(), EvaluationError> {
         loop {
-            if self.to_stop {
-                return Ok(());
-            } else {
-                let cur = self.current_line;
-                let line: FileLine = self.lines[cur].clone();
+            let cur = self.current_line;
+            let line: FileLine = self.lines[cur].clone();
 
-                if let Err(e) = self.eval_file_line(line) {
-                    return Err(e);
-                }
-                if !self.is_jumped {
+            let statement_result = self.eval_file_line(line)?;
+
+            match statement_result {
+                StatementResult::Continue => {
                     self.current_line += 1;
                     if self.current_line >= self.lines.len() {
                         break;
                     }
-                } else {
-                    self.is_jumped = false;
                 }
+                StatementResult::FullStop => return Ok(()),
+                StatementResult::LocalStop => return Ok(()),
+                StatementResult::JumpTo(line) => self.current_line = line,
             }
         }
         Ok(())
     }
 
-    fn eval_file_line(&mut self, line: FileLine) -> Result<(), EvaluationError> {
+    fn eval_file_line(&mut self, line: FileLine) -> Result<StatementResult, EvaluationError> {
         match line {
             FileLine::Line {
                 labels: _s,
@@ -81,244 +79,177 @@ impl Evaluator {
         }
     }
 
-    pub fn eval_statements(&mut self, statements: Statements) -> Result<(), EvaluationError> {
+    pub fn eval_statements(
+        &mut self,
+        statements: Statements,
+    ) -> Result<StatementResult, EvaluationError> {
         match statements {
             Statements::OneLineStatement(stmnt) => self.eval_one_line_statement(stmnt),
             Statements::SimpleStatements(stmnts) => {
                 for statement in stmnts {
-                    if let Err(e) = self.eval_statement(statement) {
-                        return Err(e);
+                    let statement_result = self.eval_statement(statement)?;
+                    match statement_result {
+                        StatementResult::Continue => (),
+                        StatementResult::FullStop => return Ok(StatementResult::FullStop),
+                        StatementResult::LocalStop => return Ok(StatementResult::LocalStop),
+                        StatementResult::JumpTo(line) => return Ok(StatementResult::JumpTo(line)),
                     }
                 }
-                Ok(())
+                Ok(StatementResult::Continue)
             }
         }
     }
 
-    fn eval_loop(
+    fn eval_subprogram_call(
         &mut self,
-        step: i64,
-        last_value_or_condition: Value,
-        iterator: i64,
-        label_until: &String,
-        label_to: &String,
-        condition: Option<Expression>,
-        l_location: Location,
-        r_location: Location,
-    ) -> Result<(), EvaluationError> {
-        let line_from = self.current_line + 1;
-        let line_to = *self
-            .context
-            .lookup_line_by_label(label_until)
-            .expect(format!("label '{}' is not declared!", &label_until).as_str());
+        statement: OneLineStatement,
+    ) -> Result<StatementResult, EvaluationError> {
+        let l_location = statement.l_location;
+        let r_location = statement.r_location;
+        match &statement.node {
+            OneLineStatementKind::SubProgram {
+                sp_name,
+                args,
+                label_to,
+            } => {
+                let sp_line = match self.context.lookup_line_by_label(sp_name) {
+                    Some(l) => l.clone(),
+                    None => {
+                        return Err(EvaluationError::RuntimeError(
+                            l_location,
+                            r_location,
+                            RuntimeError::LabelNotFound(sp_name.to_string()),
+                        ))
+                    }
+                };
 
-        let line_to_jump = match self.context.lookup_line_by_label(label_to) {
-            Some(line) => *line,
-            None => {
-                return Err(EvaluationError::RuntimeError(
-                    l_location,
-                    r_location,
-                    RuntimeError::LabelNotFound(label_to.to_string()),
-                ));
-            }
-        };
-        let mut it_just_set: bool = true;
-        self.current_line = line_from;
-        loop {
-            let mut it_value = match self.context.read_from_address(iterator) {
-                Value::Int(value) => *value,
-                v => {
-                    return Err(EvaluationError::RuntimeError(
-                        l_location,
-                        r_location,
-                        RuntimeError::TypeError(Value::raise_unexpected_type_error(Type::Int, &v)),
-                    ))
-                }
-            };
-            // increment iterator
-            if !it_just_set {
-                it_value = it_value + step;
-                self.context
-                    .write_to_address(iterator, Value::new_int(it_value));
-            } else {
-                it_just_set = false
-            }
-            // check condition
+                let line_to = match self.context.lookup_line_by_label(label_to) {
+                    Some(l) => l.clone(),
+                    None => {
+                        return Err(EvaluationError::RuntimeError(
+                            l_location,
+                            r_location,
+                            RuntimeError::LabelNotFound(label_to.to_string()),
+                        ))
+                    }
+                };
 
-            match last_value_or_condition {
-                Value::Bool { .. } => {
-                    let _cond: Expression = condition.clone().unwrap();
-                    let cond = {
-                        match self.eval_expression(_cond) {
-                            Ok(v) => match v {
-                                Value::Bool(value) => value,
-                                _ => {
-                                    return Err(EvaluationError::RuntimeError(
-                                        l_location,
-                                        r_location,
-                                        RuntimeError::TypeError(
-                                            Value::raise_unexpected_type_error(Type::Bool, &v),
-                                        ),
-                                    ))
+                let agrs_len = args.len();
+
+                self.current_line = sp_line;
+                let cur = self.current_line;
+                let line: FileLine = self.lines[cur].clone();
+
+                match line {
+                    FileLine::Line { labels, statements } => match statements {
+                        Statements::OneLineStatement(one_line_statement) => {
+                            return Err(EvaluationError::SubProgramDeclaration(
+                                one_line_statement.l_location,
+                                one_line_statement.r_location,
+                                sp_name.to_string(),
+                            ))
+                        }
+                        Statements::SimpleStatements(statements) => {
+
+                        let mut vars: Vec<String> = vec![];
+
+                        //
+                        // Collect variables name
+                        //
+                            for statement in statements.clone() {
+                                match statement.node {
+                                    SimpleStatementKind::Assign { .. } => todo!(), // raise error,
+                                    SimpleStatementKind::Send { lhs, rhs } => {
+                                        match rhs.node {
+                                            ExpressionKind::Null => (),
+                                            _ => todo!() // raise error,
+                                        }
+
+                                        match lhs.node {
+                                            ExpressionKind::Var { name } => vars.push(name),
+                                            _ => todo!(),
+                                        }
+                                    },
+                                    SimpleStatementKind::Exchange { .. } => todo!(), // raise error,
+                                    SimpleStatementKind::Expression { .. } => todo!(), // raise error,
                                 }
-                            },
-                            Err(e) => return Err(e),
-                        }
-                    };
-
-                    if cond {
-                    } else {
-                        self.is_jumped = true;
-                        self.current_line = line_to_jump;
-                        return Ok(());
-                    }
-                }
-
-                Value::Int(value) => {
-                    if it_value <= value {
-                    } else {
-                        self.is_jumped = true;
-                        self.current_line = line_to_jump;
-                        return Ok(());
-                    }
-                }
-
-                _ => {
-                    return Err(EvaluationError::RuntimeError(
-                        l_location,
-                        r_location,
-                        RuntimeError::TypeError(Value::_raise_unexpected_type_error(
-                            vec![Type::Int, Type::Bool],
-                            &last_value_or_condition,
-                        )),
-                    ))
-                }
-            }
-
-            loop {
-                if self.to_stop {
-                    return Ok(());
-                } else {
-                    let cur = self.current_line;
-                    let line: FileLine = self.lines[cur].clone();
-
-                    if let Err(e) = self.eval_file_line(line) {
-                        return Err(e);
-                    }
-                    if !self.is_jumped {
-                        if self.current_line == line_to {
-                            self.current_line = line_from;
-                            break;
-                        } else {
-                            self.current_line += 1;
-                            if self.current_line >= self.lines.len() {
-                                return Ok(());
                             }
+                            // 
+                            // Check arguments number
+                            // 
+                            if statements.len() != agrs_len {
+                                return Err(EvaluationError::SubProgram(
+                                    args[0].l_location,
+                                    args[agrs_len - 1].r_location,
+                                    RuntimeError::InvalidArgumentsNumber(
+                                        sp_name.to_string(),
+                                        statements.len(),
+                                        agrs_len,
+                                    ),
+                                ));
+                            };
+
+                            //
+                            // Evaluate parameters expressions
+                            //
+                            
+                            let mut addresses: Vec<i64> = vec![];
+                            for statement in args.clone() {
+                                        
+                                        
+                                        match self.eval_expression(*statement.clone())?.extract_int() {
+                                            Ok(e) => addresses.push(e),
+                                            Err(e) => return Err(EvaluationError::RuntimeError(statement.l_location, statement.r_location, RuntimeError::TypeError(e))),
+                                        };
+
+                            }
+
+                            let zipped: Vec<(i64, String)> = addresses.into_iter().zip(vars.clone().into_iter()).collect();
+                            for (address, var) in zipped {
+                                self.context.add_variable(&var, address);
+                            }
+
+                            self.current_line +=1;
+
+                            loop {
+                                let cur = self.current_line;
+                                let line: FileLine = self.lines[cur].clone();
+                    
+                                let statement_result = self.eval_file_line(line)?;
+                    
+                                match statement_result {
+                                    StatementResult::Continue => {
+                                        self.current_line += 1;
+                                        if self.current_line >= self.lines.len() {
+                                            return Ok(StatementResult::FullStop)
+                                        }
+                                    }
+                                    StatementResult::FullStop => return Ok(StatementResult::FullStop),
+                                    StatementResult::LocalStop => {
+                                        for name in  vars.iter(){
+                                            self.context.free_variable(name)
+                                        }
+                                        return Ok(StatementResult::JumpTo(line_to))},
+                                    StatementResult::JumpTo(line) => self.current_line = line,
+                                }
+                            }
+                        
+                   
                         }
-                    } else {
-                        if (self.current_line >= line_from) && (self.current_line < line_to) {
-                        } else {
-                            return Ok(());
-                        }
-                    }
+                    },
                 }
             }
+            _ => return Ok(StatementResult::Continue),
         }
     }
 
     fn eval_one_line_statement(
         &mut self,
         statement: OneLineStatement,
-    ) -> Result<(), EvaluationError> {
+    ) -> Result<StatementResult, EvaluationError> {
         let node = statement.node.clone();
         match node {
-            OneLineStatementKind::Loop {
-                initial_value,
-                step,
-                last_value_or_condition,
-                iterator,
-                label_until,
-                label_to,
-            } => {
-                let l_it_adrress = match self.eval_expression(iterator.clone()) {
-                    Ok(v) => match v.extract_int() {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return Err(EvaluationError::RuntimeError(
-                                iterator.l_location,
-                                iterator.r_location,
-                                RuntimeError::TypeError(e),
-                            ))
-                        }
-                    },
-                    Err(e) => return Err(e),
-                };
-
-                let l_init_value = match self.eval_expression(initial_value.clone()) {
-                    Ok(v) => match v.extract_int() {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return Err(EvaluationError::RuntimeError(
-                                initial_value.l_location,
-                                initial_value.r_location,
-                                RuntimeError::TypeError(e),
-                            ))
-                        }
-                    },
-                    Err(e) => return Err(e),
-                };
-
-                self.context
-                    .write_to_address(l_it_adrress, Value::new_int(l_init_value));
-
-                let l_step = match self.eval_expression(step.clone()) {
-                    Ok(v) => match v.extract_int() {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return Err(EvaluationError::RuntimeError(
-                                step.l_location,
-                                step.r_location,
-                                RuntimeError::TypeError(e),
-                            ))
-                        }
-                    },
-                    Err(e) => return Err(e),
-                };
-
-                let mut cond = None;
-                let l_last_value_or_condition: Value =
-                    match self.eval_expression(last_value_or_condition.clone()) {
-                        Ok(v) => match v {
-                            Value::Int(value) => Value::Int(value),
-                            Value::Bool(value) => {
-                                cond = Some(last_value_or_condition.clone());
-                                Value::Bool(value)
-                            }
-                            v => {
-                                return Err(EvaluationError::RuntimeError(
-                                    last_value_or_condition.l_location,
-                                    last_value_or_condition.r_location,
-                                    RuntimeError::TypeError(Value::_raise_unexpected_type_error(
-                                        vec![Type::Int, Type::Bool],
-                                        &v,
-                                    )),
-                                ))
-                            }
-                        },
-                        Err(e) => return Err(e),
-                    };
-
-                self.eval_loop(
-                    l_step,
-                    l_last_value_or_condition,
-                    l_it_adrress,
-                    &label_until,
-                    &label_to,
-                    cond,
-                    statement.l_location,
-                    statement.r_location,
-                )
-            }
+            OneLineStatementKind::Loop { .. } => self.eval_loop(statement),
             OneLineStatementKind::Predicate {
                 condition,
                 if_true,
@@ -346,14 +277,10 @@ impl Evaluator {
                     self.eval_statements(*if_false)
                 }
             }
-            OneLineStatementKind::Exit => Ok(self.stop_eval()),
+            OneLineStatementKind::Exit => Ok(StatementResult::FullStop),
             OneLineStatementKind::UnconditionalJump { label } => {
                 match self.context.lookup_line_by_label(&label) {
-                    Some(line) => {
-                        self.is_jumped = true;
-                        self.current_line = line.clone();
-                        Ok(())
-                    }
+                    Some(line) => Ok(StatementResult::JumpTo(*line)),
                     None => {
                         return Err(EvaluationError::RuntimeError(
                             statement.l_location,
@@ -364,19 +291,9 @@ impl Evaluator {
                 }
             }
             OneLineStatementKind::SubProgram { .. } => {
-                return Err(EvaluationError::UnhandledFormula(
-                    statement.l_location,
-                    statement.r_location,
-                    statement.node.clone(),
-                ))
+                return self.eval_subprogram_call(statement)
             }
-            OneLineStatementKind::Return => {
-                return Err(EvaluationError::UnhandledFormula(
-                    statement.l_location,
-                    statement.r_location,
-                    statement.node.clone(),
-                ))
-            }
+            OneLineStatementKind::Return => return Ok(StatementResult::LocalStop),
         }
     }
 
@@ -384,7 +301,7 @@ impl Evaluator {
         &mut self,
         lhs: &Located<ExpressionKind>,
         rhs: &Located<ExpressionKind>,
-    ) -> Result<(), EvaluationError> {
+    ) -> Result<StatementResult, EvaluationError> {
         let address = match self.eval_expression(lhs.clone())?.extract_int() {
             Ok(address) => address,
             Err(e) => {
@@ -398,14 +315,15 @@ impl Evaluator {
 
         let value = self.eval_expression(rhs.clone())?;
 
-        Ok(self.context.write_to_address(address, value))
+        self.context.write_to_address(address, value);
+        Ok(StatementResult::Continue)
     }
 
     fn assign_to_variable(
         &mut self,
         variable: &String,
         rhs: &Located<ExpressionKind>,
-    ) -> Result<(), EvaluationError> {
+    ) -> Result<StatementResult, EvaluationError> {
         let address = match self.eval_expression(rhs.clone())?.extract_int() {
             Ok(address) => address,
             Err(e) => {
@@ -416,20 +334,24 @@ impl Evaluator {
                 ))
             }
         };
-
-        Ok(self.context.add_variable(variable, address))
+        self.context.add_variable(variable, address);
+        Ok(StatementResult::Continue)
     }
 
     fn assign_to_address(
         &mut self,
         address: i64,
         rhs: &Located<ExpressionKind>,
-    ) -> Result<(), EvaluationError> {
+    ) -> Result<StatementResult, EvaluationError> {
         let value = self.eval_expression(rhs.clone())?;
-        Ok(self.context.write_to_address(address, value))
+        self.context.write_to_address(address, value);
+        Ok(StatementResult::Continue)
     }
 
-    fn eval_statement(&mut self, statement: SimpleStatement) -> Result<(), EvaluationError> {
+    fn eval_statement(
+        &mut self,
+        statement: SimpleStatement,
+    ) -> Result<StatementResult, EvaluationError> {
         let node = &statement.node;
         match node {
             SimpleStatementKind::Expression { expression } => {
@@ -437,7 +359,7 @@ impl Evaluator {
                     return Err(e);
                 }
 
-                Ok(())
+                Ok(StatementResult::Continue)
             }
 
             SimpleStatementKind::Assign { lhs, rhs } => {
@@ -599,8 +521,8 @@ impl Evaluator {
                     Ok(v) => v,
                     Err(e) => return Err(e),
                 };
-
-                Ok(self.context.write_to_address(address, value))
+                self.context.write_to_address(address, value);
+                Ok(StatementResult::Continue)
             }
 
             _ => Err(EvaluationError::UnhandledStatement(
@@ -875,7 +797,7 @@ impl Evaluator {
                     ))
                 }
             };
-            i+=1;
+            i += 1;
         }
     }
 }

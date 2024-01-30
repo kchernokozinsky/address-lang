@@ -73,6 +73,10 @@ impl RuntimeContext {
         }
     }
 
+    pub fn free_variable(& mut self, name: &String) -> () {
+        self.variable_addresses.remove(name);
+    }
+
     pub fn register_label(&mut self, label: String, line: usize) {
         self.labels.insert(label, line);
     }

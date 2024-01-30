@@ -68,6 +68,7 @@ pub enum RuntimeError {
     FunctionNotFound(String),
     InvalidArgument(String),
     FunctionCallError(String, String),
+    InvalidArgumentsNumber(String, usize, usize),
     // ...other runtime errors
 }
 
@@ -97,6 +98,9 @@ impl std::fmt::Display for RuntimeError {
             RuntimeError::FunctionCallError(func_name, error) => {
                 write!(f, "Function '{}' raised error: '{}'", func_name, error)
             }
+            RuntimeError::InvalidArgumentsNumber(sp_name, expected_number, actual_number) => {
+                write!(f, "Invalid arguments number error: subprogram:  '{}', expected: {} , actual: {}", sp_name, expected_number, actual_number)
+            },
         }
     }
 }
@@ -116,9 +120,10 @@ pub enum EvaluationError {
     RuntimeError(Location, Location, RuntimeError), // Integrating RuntimeError
     UnhandledStatement(Location, Location, SimpleStatementKind),
     UnhandledFormula(Location, Location, OneLineStatementKind),
-    UnhandledExpression(Location, Location, ExpressionKind),
-    UnhandledBinaryOperation(Location, Location, BinaryOp),
-    // ...other errors
+    UnhandledExpression(Location, Location, ExpressionKind),    // ...other errors
+    SubProgramDeclaration(Location, Location, String),
+    SubProgram(Location, Location, RuntimeError), // ...other errors
+
 }
 
 impl std::fmt::Display for EvaluationError {
@@ -149,17 +154,26 @@ impl std::fmt::Display for EvaluationError {
                 "Unhandled expression between {:?} and {:?}: {:?}",
                 left_loc, right_loc, kind
             ),
-            EvaluationError::UnhandledBinaryOperation(left_loc, right_loc, kind) => write!(
-                f,
-                "Unhandled Binary Operation between {:?} and {:?}: {:?}",
-                left_loc, right_loc, kind
-            ),
+            // EvaluationError::UnhandledBinaryOperation(left_loc, right_loc, kind) => write!(
+            //     f,
+            //     "Unhandled Binary Operation between {:?} and {:?}: {:?}",
+            //     left_loc, right_loc, kind
+            // ),
             EvaluationError::UnhandledFormula(left_loc, right_loc, kind) => write!(
                 f,
                 "Unhandled statement between {:?} and {:?}: {:?}",
                 left_loc, right_loc, kind
             ),
-            // ...other errors
+            EvaluationError::SubProgramDeclaration(left_loc, right_loc, sp_name) => write!(
+                f,
+                "Wrong subprogram declaration between {:?} and {:?} in subprogram '{}'",
+                left_loc, right_loc, sp_name
+            ),
+            EvaluationError::SubProgram(left_loc, right_loc, runtime_error) => write!(
+                f,
+                "SubProgram Error between {:?} and {:?}: {}",
+                left_loc, right_loc, runtime_error
+            )
         }
     }
 }
