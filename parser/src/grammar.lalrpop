@@ -151,6 +151,7 @@ ExpressionPrecedence8: Expression = {
             r_location,
             node: ExpressionKind::BinaryOp{op: BinaryOp::Or, lhs: Box::new(lhs), rhs: Box::new(rhs)},
         },
+
     ExpressionPrecedence7,
 };
 
@@ -237,12 +238,7 @@ ExpressionPrecedence2: Expression = {
         r_location,
         node: ExpressionKind::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
         },
-        <l_location:@L>  "DEREF" "{" <expression:ExpressionPrecedence2>  "," <r: ExpressionPrecedence2> "}" <r_location:@L>  => Expression 
-        {
-        l_location,
-        r_location,
-        node: ExpressionKind::UnaryOp{op: UnaryOp::MultipleDereference(Box::new(r)), expr: Box::new(expression)},
-        },
+
     ExpressionPrecedence1
 }
 
@@ -250,6 +246,7 @@ ExpressionPrecedence1: Expression = {
     LiteralExpression,
     List,
     FunctionCall,
+    MultipleDereference,
     Variable,
     "(" <Expression> ")",
 
@@ -272,6 +269,14 @@ FunctionCall: Expression = {
         }
 }
 
+MultipleDereference: Expression = {
+        <l_location:@L>  "DEREF" "{" <expression:Expression>  "," <r: Expression> "}" <r_location:@L>  => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::UnaryOp{op: UnaryOp::MultipleDereference(Box::new(r)), expr: Box::new(expression)},
+        },
+}
 #[inline]
 Comma<T>: Vec<T> = { // (1)
     <mut v:(<T> ",")*> <e:T?> => match e { // (2)

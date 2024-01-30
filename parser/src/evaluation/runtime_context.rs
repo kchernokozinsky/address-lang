@@ -47,11 +47,16 @@ impl RuntimeContext {
     pub fn allocate_list(&mut self, elements: Vec<Value>) -> i64 {
         let mut addresses: (i64, i64) = self.generate_free_address_for_list_element(); 
         let head = addresses.0;
-        for elem in elements {
+        let mut i =  0;
+        for elem in elements.clone() {
+            i += 1;
             self.write_to_address(addresses.0, Value::Null);
             self.write_to_address(addresses.1, elem);
             let next = self.generate_free_address_for_list_element();
-            self.write_to_address(addresses.0, Value::new_int(next.0));
+            if i != elements.len() {
+                self.write_to_address(addresses.0, Value::new_int(next.0));
+            }
+            
             addresses = next;
         }
         head
