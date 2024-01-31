@@ -60,6 +60,3 @@ rem ... null => list; null => index;
     D {list, 'index} = D {list, 'index + 1}
 
 return
-
-
-
