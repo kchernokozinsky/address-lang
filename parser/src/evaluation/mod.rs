@@ -25,10 +25,10 @@ pub enum StatementResult {
 }
 
 impl Evaluator {
-    pub fn new(lines: Vec<FileLine>, env: RuntimeContext) -> Evaluator {
-        let mut evaluator = Evaluator {
+    pub fn new(lines: Vec<FileLine>, context: RuntimeContext) -> Evaluator {
+        let evaluator = Evaluator {
             lines,
-            context: env,
+            context,
             current_line: 0,
         };
         evaluator

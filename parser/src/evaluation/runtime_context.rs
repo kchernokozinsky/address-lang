@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use crate::value::*;
-
-use super::{EvaluationError, RuntimeError};
+use super::RuntimeError;
 pub struct RuntimeContext {
     functions: HashMap<String, Value>,
     variable_addresses: HashMap<String, i64>,
