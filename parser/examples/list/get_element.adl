@@ -1,0 +1,16 @@
+l = ["a", "b", "c", "d", "e", "f", "g"];
+
+'i = 4
+SP get {l, i, el}
+
+Print {'i, "nth element is '", 'el, "'"}
+
+!
+
+
+# get element value by its index 
+get ... null => list; null => index; null => e
+
+    'e = '(D {list, 'index} + 1)
+
+return

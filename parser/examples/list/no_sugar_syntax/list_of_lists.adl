@@ -1,0 +1,23 @@
+# head address inizialization
+h_a = 0; 
+h_b = 40;
+
+# associate h_a addresses 
+'h_a = 10; ''h_a = 8; '''h_a = 25; ''''h_a = 4
+
+# associate h_a addresses 
+'h_b = 110; ''h_b = 18; '''h_b = 125; ''''h_b = 14
+
+#fill elements h_a with values
+'(h_a + 1)    = "a"; 
+'('h_a + 1)   = 40; 
+'(''h_a + 1)  = "c"; 
+'('''h_a + 1) = "d";
+'(''''h_a + 1) = "e";
+
+#fill elements h_b with values
+'(h_b + 1)    = "a1"; 
+'('h_b + 1)   = "b1"; 
+'(''h_b + 1)  = "c1"; 
+'('''h_b + 1) = "d1";
+'('''h_b + 1) = "e1";
