@@ -65,6 +65,7 @@ pub enum RuntimeError {
     IndexOutOfBounds(usize, usize),
     VariableNotFound(String),
     LabelNotFound(String),
+    LabelAlreadyRegistered(String, usize, usize),
     FunctionNotFound(String),
     InvalidArgument(String),
     FunctionCallError(String, String),
@@ -101,6 +102,9 @@ impl std::fmt::Display for RuntimeError {
             RuntimeError::InvalidArgumentsNumber(sp_name, expected_number, actual_number) => {
                 write!(f, "Invalid arguments number error: subprogram:  '{}', expected: {} , actual: {}", sp_name, expected_number, actual_number)
             },
+            RuntimeError::LabelAlreadyRegistered(label_name, registered_line, try_line) => {
+                    write!(f, "Label '{}' can't be registered twice at line {}. It was registered at line {}", label_name, try_line, registered_line)
+            },
         }
     }
 }
@@ -117,7 +121,8 @@ impl std::fmt::Debug for RuntimeError {
 pub enum EvaluationError {
     SyntaxError(Location, Location, String),
     TypeError(Location, Location, String),
-    RuntimeError(Location, Location, RuntimeError), // Integrating RuntimeError
+    RuntimeError(Location, Location, RuntimeError),
+    RuntimeErrorWithoutLocation(RuntimeError), // Integrating RuntimeError
     UnhandledStatement(Location, Location, SimpleStatementKind),
     UnhandledFormula(Location, Location, OneLineStatementKind),
     UnhandledExpression(Location, Location, ExpressionKind),    // ...other errors
@@ -173,7 +178,12 @@ impl std::fmt::Display for EvaluationError {
                 f,
                 "SubProgram Error between {:?} and {:?}: {}",
                 left_loc, right_loc, runtime_error
-            )
+            ),
+            EvaluationError::RuntimeErrorWithoutLocation(runtime_error) => write!(
+                f,
+                "Runtime Error : {}",
+                runtime_error
+            ),
         }
     }
 }

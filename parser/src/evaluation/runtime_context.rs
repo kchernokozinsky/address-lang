@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use crate::value::*;
+
+use super::{EvaluationError, RuntimeError};
 pub struct RuntimeContext {
     functions: HashMap<String, Value>,
     variable_addresses: HashMap<String, i64>,
@@ -77,8 +79,14 @@ impl RuntimeContext {
         self.variable_addresses.remove(name);
     }
 
-    pub fn register_label(&mut self, label: String, line: usize) {
-        self.labels.insert(label, line);
+    pub fn register_label(&mut self, label: String, line: usize) -> Result<(), RuntimeError> {
+        match self.labels.get(&label) {
+            Some(registered_line) => return Err(RuntimeError::LabelAlreadyRegistered(label, *registered_line + 1, line + 1)),
+            None => {
+                self.labels.insert(label, line);
+                Ok(())},
+        }
+        
     }
 
     pub fn lookup_line_by_label(&self, label: &String) -> Option<&usize> {

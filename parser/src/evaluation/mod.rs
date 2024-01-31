@@ -31,7 +31,6 @@ impl Evaluator {
             context: env,
             current_line: 0,
         };
-        evaluator.extract_labels();
         evaluator
     }
 
@@ -39,16 +38,23 @@ impl Evaluator {
         self.current_line += 1;
     }
 
-    fn extract_labels(&mut self) {
+    fn extract_labels(&mut self) -> Result<(), EvaluationError> {
         for (index, line) in self.lines.iter().enumerate() {
             let labels = line.labels();
             for label in labels {
-                self.context.register_label(label.to_string(), index);
+                match self.context.register_label(label.to_string(), index) {
+                    Ok(_) => {},
+                    Err(e) => return Err(EvaluationError::RuntimeErrorWithoutLocation(e)),
+                };
             }
         }
+        Ok(())
     }
 
     pub fn eval(&mut self) -> Result<(), EvaluationError> {
+
+        self.extract_labels()?;
+
         loop {
             let cur = self.current_line;
             let line: FileLine = self.lines[cur].clone();
@@ -540,11 +546,6 @@ impl Evaluator {
             ExpressionKind::Var { name } => match self.context.get_variable_address(&name) {
                 Ok(v) => Ok(Value::new_int(v)),
                 Err(_) => Ok(Value::new_int(self.context.allocate_variable(&name)))
-                // Err(EvaluationError::RuntimeError(
-                //     expression.l_location,
-                //     expression.r_location,
-                //     RuntimeError::VariableNotFound(name),
-                // )),
             },
 
             ExpressionKind::UnaryOp { op, expr } => match op {

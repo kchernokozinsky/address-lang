@@ -4,10 +4,10 @@ l2 = ["1", "2", "3", "4", "5", "6", "7"];
 'k = 5
 
 SP get {l1, k, result}
-#SP len {l1, length}
-#SP rem {l1, k}
-#SP concat {l1, l2}
-#SP print {l1}
+SP len {l1, length}
+SP rem {l1, k}
+SP concat {l1, l2}
+SP print {l1}
 
 #Print{"5th element of l1: ", 'result}
 Print{"length: ",'length}
@@ -26,10 +26,8 @@ return
 # concat lists
 concat ... null => list1; null => list2;
 
-    SP len {list1, len1} c
-    
-    
-    c ... Print ;'(D {list1, 'len1}) = list2
+    SP len {list1, len1}
+    '(D {list1, 'len1 - 1}) = list2
 
 return
 
@@ -43,14 +41,13 @@ return
 # get length of the list
 len ... null => list; null => len
 
-    L {0, 1, true => i } l l 
+    L {0, 1, true => i } l1
         
     P {D {list, 'i} == null} | @k
             'len = 'i; 
             return
         k...
-    Print{'i}
-    l ... 
+    l1 ... 
  return   
 
 # rem element by its index 

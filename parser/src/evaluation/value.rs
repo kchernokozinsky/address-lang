@@ -78,6 +78,7 @@ impl Value {
         match (lv, rv) {
             (Value::Int(lv), Value::Int(rv)) => Ok(Value::Int(lv + rv)),
             (Value::Float(lv), Value::Float(rv)) => Ok(Value::Float(lv + rv)),
+            (Value::String(lv), Value::String(rv)) => Ok(Value::String(lv.to_string() + rv)),
             _ =>Err(Value::raise_incompatible_types_error(&lv, &rv, "+".to_owned())),
         }
     }

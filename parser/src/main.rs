@@ -20,15 +20,20 @@ lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_file("examples/list/list.adl");
+    let test = read_file("examples/subprogram/sub_program.adl");
     let mut env = RuntimeContext::new();
     env.add_function("Print", Value::new_function(print_));
+    env.add_function("Str", Value::new_function(to_string_));
     let lexer = Lexer::new(&test);
+
     // for item in lexer {
     //     println!("{:?}", item);
     // }
+
     let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
+
     // println!("{:?}", ast);
+
     let lines = match ast {
         Algorithm::Body(lines) => lines,
     };
