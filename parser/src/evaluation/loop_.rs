@@ -105,16 +105,22 @@ impl Evaluator {
                 };
                 let line_from = self.current_line + 1;
 
-                let line_to: usize = match self.context.lookup_line_by_label(label_to) {
-                    Some(l) => l.clone(),
-                    None => {
-                        return Err(EvaluationError::RuntimeError(
-                            l_location,
-                            r_location,
-                            RuntimeError::LabelNotFound(label_to.to_string()),
-                        ))
-                    }
+                let line_to: usize =  match label_to {
+                    Some(label_to) => {
+                        match self.context.lookup_line_by_label(label_to) {
+                            Some(l) => l.clone(),
+                            None => {
+                                return Err(EvaluationError::RuntimeError(
+                                    l_location,
+                                    r_location,
+                                    RuntimeError::LabelNotFound(label_to.to_string()),
+                                ))
+                            }
+                        }
+                    },
+                    None => line_until + 1,
                 };
+                
                 //
                 // Evaluate lines inside loop depending on condition
                 //

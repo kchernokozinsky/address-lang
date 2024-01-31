@@ -58,7 +58,7 @@ pub OneLineStatement: OneLineStatement = {
 };
 
 pub CallSubProgram: OneLineStatement = {
-    <l_location:@L> "SUB_PROGRAM" <sp_name: Identifier> "{" <args: Parameters> "}" <label_to: Identifier> <r_location:@L> => OneLineStatement
+    <l_location:@L> "SUB_PROGRAM" <sp_name: Identifier> "{" <args: Parameters> "}" <label_to: Identifier?> <r_location:@L> => OneLineStatement
         {
             l_location,
             r_location,
@@ -86,7 +86,7 @@ pub Predicate: OneLineStatement = {
 };
 
 pub Loop: OneLineStatement = {
-    <l_location:@L> "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier> <r_location:@L> => OneLineStatement
+    <l_location:@L> "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier?> <r_location:@L> => OneLineStatement
         {
             l_location,
             r_location,

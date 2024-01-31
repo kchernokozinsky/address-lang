@@ -3,12 +3,11 @@ l2 = ["1", "2", "3", "4", "5", "6", "7"];
 
 'k = 5
 
-       SP get {l1, k, result} l1
-l1 ... SP len {l1, length} l2
-l2 ... SP rem {l1, k} l3
-l3 ... SP concat {l1, l2} l4
-l4 ... SP print {l1} l5
-l5 ... 
+SP get {l1, k, result}
+#SP len {l1, length}
+#SP rem {l1, k}
+#SP concat {l1, l2}
+#SP print {l1}
 
 #Print{"5th element of l1: ", 'result}
 Print{"length: ",'length}
@@ -18,7 +17,7 @@ Print{"length: ",'length}
 # print list elements
 print ... null => list;
 
-    L {0, 1, true => i } l l 
+    L {0, 1, true => i } l
             P {D {list, 'i} == null} return | Print {'(D {list, 'i} + 1), ", "}
     l ... 
 

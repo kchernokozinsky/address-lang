@@ -41,7 +41,7 @@ pub enum OneLineStatementKind {
     SubProgram {
         sp_name: String,
         args: Vec<Box<Expression>>,
-        label_to: String,
+        label_to: Option<String>,
     },
     Loop {
         initial_value: Expression,
@@ -49,7 +49,7 @@ pub enum OneLineStatementKind {
         last_value_or_condition: Expression,
         iterator: Expression,
         label_until: String,
-        label_to: String,
+        label_to: Option<String>,
     },
     Predicate {
         condition: Expression,
