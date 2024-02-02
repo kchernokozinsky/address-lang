@@ -40,6 +40,9 @@ fn main() {
 
     let mut  compiler = Evaluator::new(lines, env);
     let result = compiler.eval();
-    print!("{:?}", result)
+    match result {
+        Ok(_) => {},
+        Err(e) => print!("{}", e),
+    }
 }
 
