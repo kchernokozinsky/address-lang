@@ -1,0 +1,134 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Address Language",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#null"
+    },
+    {
+      "include": "#boolean"
+    },
+    {
+      "include": "#labels"
+    },
+    {
+      "include": "#goto-labels"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "include": "#control-structures"
+    },
+    {
+      "include": "#comments"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.adl",
+          "match": "\\b(SP|D|del|return|Print|Str)\\b"
+        }
+      ]
+    },
+    "null": {
+      "patterns": [
+        {
+          "name": "constant.language.null.adl",
+          "match": "null"
+        }
+      ]
+    },
+    "boolean": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.adl",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.adl",
+          "match": "\\b\\d+\\.?\\d*\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.adl",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.adl",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "variables": {
+      "name": "variable.other.adl",
+      "match": "\\w+"
+    },
+    "control-structures": {
+      "patterns": [
+        {
+          "name": "keyword.control.loop.adl",
+          "match": "L"
+        },
+        {
+          "name": "keyword.control.conditional.adl",
+          "match": "P"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.adl",
+          "match": "\\b(=|=>)\\b"
+        },
+        {
+          "name": "keyword.operator.arithmetic.adl",
+          "match": "\\b(\\+|\\-|\\*|\\/)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.adl",
+          "match": "\\b(==|!=|>=|<=)\\b"
+        },
+        {
+          "name": "keyword.operator.word.adl",
+          "match": "\\b(and|or)\\b"
+        }
+      ]
+    },
+    "comments": {
+      "name": "comment.line.number-sign.adl",
+      "begin": "#",
+      "end": "$"
+    },
+    "labels": {
+      "name": "entity.name.label",
+      "match": "\\b\\w+\\s*\\.\\.\\."
+    },
+    "goto-labels": {
+      "name": "entity.name.label",
+      "match": "@\\w+"
+    }
+  },
+  "scopeName": "source.adl"
+}

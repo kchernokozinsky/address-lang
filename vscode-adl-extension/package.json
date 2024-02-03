@@ -1,0 +1,25 @@
+{
+  "name": "address-lang-syntax-highlighting",
+  "displayName": "address-lang",
+  "description": "Syntax Highlighting for address programming language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "adl",
+      "aliases": ["Address Language", "adl"],
+      "extensions": [".adl"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "adl",
+      "scopeName": "source.adl",
+      "path": "./syntaxes/adl.tmLanguage.json"
+    }]
+  }
+}
