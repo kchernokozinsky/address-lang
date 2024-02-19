@@ -4,7 +4,7 @@ pub fn print_ (args: Vec<Value>) -> Result<Value, String> {
     for arg in args {
     print!("{}", arg);
     }
-    print!("\n");
+    println!();
     Ok(Value:: Null)
 }
 

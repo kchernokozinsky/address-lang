@@ -5,6 +5,7 @@ pub mod location;
 pub mod util;
 pub mod typings;
 
+use evaluation::errors::{EvaluationErrorPrinter};
 use lexer::*;
 use util::*;
 use ast::*;
@@ -20,7 +21,7 @@ lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_file("examples/hello_world.adl");
+    let test = read_file("examples/subprogram/list.adl");
     let mut env = RuntimeContext::new();
     env.add_function("Print", Value::new_function(print_));
     env.add_function("Str", Value::new_function(to_string_));
@@ -42,7 +43,7 @@ fn main() {
     let result = compiler.eval();
     match result {
         Ok(_) => {},
-        Err(e) => print!("{}", e),
+        Err(e) => EvaluationErrorPrinter::new(test).print_error(&e),
     }
 }
 

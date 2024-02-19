@@ -20,7 +20,7 @@ return
 # get length of the list
 len ... null => list; null => len
 
-    L {0, 1, true => i } l
+    L {0, 1 , true => i } l
         
         P {D {list, 'i} == null} | @k
                 'len = 'i; 
@@ -31,19 +31,16 @@ len ... null => list; null => len
 
  return   
 
-
  # rem element by its index 
 rem ... null => list; null => index
-
     D {list, 'index} = D {list, 'index + 1}
-
 return
 
 # print list elements
 print ... null => list
     'str = "[" 
-    L {0, 1, true => i } l1
-            P {D {list, 'i} == null} @end | 'str = 'str + Str {'(D {list, 'i} + 1)} + ","
+    L {0, " ", true => i } l1
+            P {D {list, 'i} == null} @end | 'str = 'str + Str {'(D {list, 'i} + 1)} + ", "
     l1 ... 
 end... Print {'str + "]"}
 return
