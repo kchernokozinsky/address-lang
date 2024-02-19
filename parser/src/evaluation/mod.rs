@@ -6,7 +6,7 @@ pub mod value;
 pub mod subprogram;
 
 use crate::ast::*;
-use crate::location::Location;
+use lexer::location::Location;
 use crate::typings::Type;
 use errors::*;
 use runtime_context::*;

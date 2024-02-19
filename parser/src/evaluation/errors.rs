@@ -1,5 +1,5 @@
 use crate::evaluation::*;
-use crate::location::Location;
+use lexer::location::Location;
 use crate::typings::Type;
 
 #[derive(Debug)]

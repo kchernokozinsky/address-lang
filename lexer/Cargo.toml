@@ -3,6 +3,15 @@ name = "lexer"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
+# This section is for the binary
+[[bin]]
+name = "lexer"
+path = "src/main.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+queues = "1.0.2"

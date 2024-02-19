@@ -1,4 +1,4 @@
-use crate::location::Location;
+use lexer::location::Location;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Located<T =()> {

@@ -1,14 +1,12 @@
-
-pub mod matcher;
-pub mod token;
-pub mod errors;
-use errors::*;
-use crate::location::*;
-use matcher::*;
 use queues::*;
 use std::iter::Peekable;
 use std::str::CharIndices;
-use token::*;
+
+use crate::errors::LexError;
+use crate::location::Location;
+use crate::matcher::*;
+use crate::token::TokenKind;
+
 
 pub struct Lexer<'a> {
     input: &'a str,

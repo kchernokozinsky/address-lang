@@ -1,12 +1,10 @@
 pub mod ast;
 pub mod evaluation;
-pub mod lexer;
-pub mod location;
 pub mod util;
 pub mod typings;
 
-use evaluation::errors::{EvaluationErrorPrinter};
-use lexer::*;
+use evaluation::errors::EvaluationErrorPrinter;
+use lexer::lexer::*;
 use util::*;
 use ast::*;
 use builtins::*;
