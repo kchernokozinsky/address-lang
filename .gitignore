@@ -12,3 +12,10 @@ Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+vscode-adl-extension/vsc-extension-quickstart.md
+vscode-adl-extension/README.md
+vscode-adl-extension/CHANGELOG.md
+vscode-adl-extension/.vscodeignore
+vscode-adl-extension/.vscode/settings.json
+vscode-adl-extension/.vscode/launch.json
+parser/.vscode/settings.json
