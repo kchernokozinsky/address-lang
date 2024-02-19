@@ -19,3 +19,4 @@ vscode-adl-extension/.vscodeignore
 vscode-adl-extension/.vscode/settings.json
 vscode-adl-extension/.vscode/launch.json
 parser/.vscode/settings.json
+.vscode/settings.json
