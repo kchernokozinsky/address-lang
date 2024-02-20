@@ -1,7 +1,7 @@
 use crate::ast::*;
-use crate::lexer::errors::LexError;
-use crate::location::Location as LexLocation;
-use crate::lexer::token::TokenKind;
+use lexer::errors::LexError;
+use common::location::Location as LexLocation;
+use lexer::token::TokenKind;
 grammar;
 
 pub Algorithm: Algorithm = {

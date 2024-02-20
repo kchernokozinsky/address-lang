@@ -5,10 +5,19 @@ edition = "2021"
 
 description = "The parser for the address programming language"
 
+[lib]
+path = "src/lib.rs"
+
+# This section is for the binary
+[[bin]]
+name = "parser"
+path = "src/main.rs"
+
 [build-dependencies]
 lalrpop = "0.20.0"
 
 [dependencies]
+lexer = { path = "../lexer" }
+common = { path = "../common" }
 colored = "2.0"
-queues = "1.0.2"
 lalrpop-util = {version = "0.20.0", features = ["lexer"]}

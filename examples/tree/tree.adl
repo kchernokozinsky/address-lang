@@ -1,0 +1,8 @@
+# tree inizialization
+node3 = ["node3", null, null]
+node1 = ["node1", null, null]
+node2 = ["node2", node3, null]
+root = ["root_value", node1, node2]
+
+
+
