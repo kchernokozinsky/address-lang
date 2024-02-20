@@ -1,35 +1,23 @@
-pub mod ast;
-pub mod evaluation;
-pub mod util;
-pub mod typings;
+
 
 use evaluation::errors::EvaluationErrorPrinter;
-use lexer::lexer::*;
-use util::*;
-use ast::*;
+use parser::ast::*;
+use parser::util::read_file;
+use parser::evaluation;
 use builtins::*;
 use evaluation::*;
 
 use evaluation::runtime_context::RuntimeContext;
 use evaluation::value::*;
-#[macro_use]
-extern crate lalrpop_util;
-
-lalrpop_mod!(pub grammar);
 
  
 fn main() {
-    let test = read_file("examples/subprogram/list.adl");
     let mut env = RuntimeContext::new();
     env.add_function("Print", Value::new_function(print_));
     env.add_function("Str", Value::new_function(to_string_));
-    let lexer = Lexer::new(&test);
-
-    // for item in lexer {
-    //     println!("{:?}", item);
-    // }
-
-    let ast: Algorithm = grammar::AlgorithmParser::new().parse(lexer).unwrap();
+    
+    let source_text = read_file("examples/subprogram/list.adl");
+    let ast: Algorithm = parser::parse(&source_text).unwrap();
 
     // println!("{:?}", ast);
 
@@ -41,7 +29,7 @@ fn main() {
     let result = compiler.eval();
     match result {
         Ok(_) => {},
-        Err(e) => EvaluationErrorPrinter::new(test).print_error(&e),
+        Err(e) => EvaluationErrorPrinter::new(source_text).print_error(&e),
     }
 }
 
