@@ -200,7 +200,7 @@ impl fmt::Display for Value {
             Value::Bool(value) => write!(f, "{}", value),
             Value::Int(value) => write!(f, "{}", value),
             Value::Function(_) => write!(f, "Function"),
-            Value::String(value) => write!(f, "{}", value),
+            Value::String(value) => write!(f, "\"{}\"", value),
             Value::Float(value) => write!(f, "{}", value),
         }
     }

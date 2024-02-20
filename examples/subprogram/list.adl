@@ -39,7 +39,7 @@ return
 # print list elements
 print ... null => list
     'str = "[" 
-    L {0, " ", true => i } l1
+    L {0, 1, true => i } l1
             P {D {list, 'i} == null} @end | 'str = 'str + Str {'(D {list, 'i} + 1)} + ", "
     l1 ... 
 end... Print {'str + "]"}
