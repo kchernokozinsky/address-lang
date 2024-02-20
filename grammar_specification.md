@@ -1,7 +1,6 @@
 # LR(1) Grammar Specification
 
-This document specifies the LR(1) grammar used in our project. The grammar is designed to parse expressions, which can be atoms or lists. Atoms can be numbers or symbols, while lists are composed of expressions enclosed in parentheses.
-
+This document specifies the LR(1) grammar used in our project.
 ### Grammar Rules
 
 ```ebnf
