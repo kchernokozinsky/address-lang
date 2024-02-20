@@ -1,6 +1,6 @@
 use crate::ast::*;
 use lexer::errors::LexError;
-use lexer::location::Location as LexLocation;
+use common::location::Location as LexLocation;
 use lexer::token::TokenKind;
 grammar;
 

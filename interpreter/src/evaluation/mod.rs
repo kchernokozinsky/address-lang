@@ -5,9 +5,9 @@ pub mod runtime_context;
 pub mod value;
 pub mod subprogram;
 
-use crate::ast::*;
-use lexer::location::Location;
-use crate::typings::Type;
+use parser::ast::*;
+use common::location::Location;
+use common::typings::Type;
 use errors::*;
 use runtime_context::*;
 use value::*;

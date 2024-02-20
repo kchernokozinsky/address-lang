@@ -1,5 +1,4 @@
-use crate::*;
-use self::typings::Type;
+use common::typings::Type;
 use super::*;
 
 impl Evaluator {

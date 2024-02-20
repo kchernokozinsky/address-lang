@@ -1,5 +1,5 @@
 use std::{fmt::{Display, Formatter, self}, error::Error};
-use crate::location::Location;
+use common::location::Location;
 
 
 pub enum LexError {

@@ -1,6 +1,6 @@
 use crate::evaluation::*;
-use lexer::location::Location;
-use crate::typings::Type;
+use common::location::Location;
+use common::typings::Type;
 
 #[derive(Debug)]
 pub enum ValueError {

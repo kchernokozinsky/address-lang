@@ -1,6 +1,6 @@
 use crate::evaluation::errors::ValueError;
 use std::fmt::{self};
-use crate::typings::Type;
+use common::typings::Type;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {

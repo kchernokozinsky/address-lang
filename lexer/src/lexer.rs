@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use std::str::CharIndices;
 
 use crate::errors::LexError;
-use crate::location::Location;
+use common::location::Location;
 use crate::matcher::*;
 use crate::token::TokenKind;
 
