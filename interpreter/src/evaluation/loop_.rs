@@ -1,8 +1,7 @@
-use common::typings::Type;
 use super::*;
+use common::typings::Type;
 
 impl Evaluator {
-
     fn process_lines_inside_loop(
         &mut self,
         line_from: usize,
@@ -104,27 +103,26 @@ impl Evaluator {
                 };
                 let line_from = self.current_line + 1;
 
-                let line_to: usize =  match label_to {
-                    Some(label_to) => {
-                        match self.context.lookup_line_by_label(label_to) {
-                            Some(l) => l.clone(),
-                            None => {
-                                return Err(EvaluationError::RuntimeError(
-                                    l_location,
-                                    r_location,
-                                    RuntimeError::LabelNotFound(label_to.to_string()),
-                                ))
-                            }
+                let line_to: usize = match label_to {
+                    Some(label_to) => match self.context.lookup_line_by_label(label_to) {
+                        Some(l) => l.clone(),
+                        None => {
+                            return Err(EvaluationError::RuntimeError(
+                                l_location,
+                                r_location,
+                                RuntimeError::LabelNotFound(label_to.to_string()),
+                            ))
                         }
                     },
                     None => line_until + 1,
                 };
-                
+
                 //
                 // Evaluate lines inside loop depending on condition
                 //
 
-                self.context.write_to_address(iterator_v, Value::new_int(initial));
+                self.context
+                    .write_to_address(iterator_v, Value::new_int(initial));
 
                 let mut iterator_value =
                     match self.context.read_from_address(iterator_v).extract_int() {
@@ -188,7 +186,6 @@ impl Evaluator {
                         }
                     }
                     Type::Int => {
-
                         let last_value = match last_value_or_condition_value.extract_int() {
                             Ok(v) => v,
                             Err(e) => {
@@ -219,7 +216,7 @@ impl Evaluator {
                             };
 
                             iterator_value += step;
-                            
+
                             self.context
                                 .write_to_address(iterator_v, Value::new_int(iterator_value));
 
@@ -241,5 +238,4 @@ impl Evaluator {
             _ => return Ok(StatementResult::Continue),
         };
     }
-    
 }

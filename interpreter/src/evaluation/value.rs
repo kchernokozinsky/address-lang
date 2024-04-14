@@ -1,6 +1,6 @@
 use crate::evaluation::errors::ValueError;
-use std::fmt::{self};
 use common::typings::Type;
+use std::fmt::{self};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -13,23 +13,23 @@ pub enum Value {
 }
 impl Value {
     pub fn new_int(value: i64) -> Value {
-        Value::Int (value)
+        Value::Int(value)
     }
 
     pub fn new_float(value: f64) -> Value {
-        Value::Float (value)
+        Value::Float(value)
     }
 
     pub fn new_bool(value: bool) -> Value {
-        Value::Bool (value)
+        Value::Bool(value)
     }
 
     pub fn new_string(value: String) -> Value {
-        Value::String (value)
+        Value::String(value)
     }
 
     pub fn new_function(function: fn(Vec<Value>) -> Result<Value, String>) -> Value {
-        Value::Function (function)
+        Value::Function(function)
     }
 
     pub fn type_of(value: &Value) -> Type {
@@ -39,61 +39,70 @@ impl Value {
             Value::String(_) => Type::String,
             Value::Bool(_) => Type::Bool,
             Value::Int(_) => Type::Int,
-            Value::Function(_) =>Type::Function,
+            Value::Function(_) => Type::Function,
         }
-
     }
 
     pub fn extract_int(&self) -> Result<i64, ValueError> {
         match self {
-            Value::Int (value) => Ok(*value),
-            _ => Err(Value::raise_unexpected_type_error(Type::Int, self))
+            Value::Int(value) => Ok(*value),
+            _ => Err(Value::raise_unexpected_type_error(Type::Int, self)),
         }
     }
 
     pub fn extract_float(&self) -> Result<f64, ValueError> {
         match self {
-            Value::Float (value) => Ok(*value),
-            _ =>Err(Value::raise_unexpected_type_error(Type::Float, self))
+            Value::Float(value) => Ok(*value),
+            _ => Err(Value::raise_unexpected_type_error(Type::Float, self)),
         }
     }
 
     pub fn extract_bool(&self) -> Result<bool, ValueError> {
         match self {
-            Value::Bool (value) => Ok(*value),
-            _ => Err(Value::raise_unexpected_type_error(Type::Bool, self))
+            Value::Bool(value) => Ok(*value),
+            _ => Err(Value::raise_unexpected_type_error(Type::Bool, self)),
         }
     }
 
     pub fn extract_string(&self) -> Result<String, ValueError> {
         match self {
-            Value::String (value) => Ok(value.clone()),
-            _ => Err(Value::raise_unexpected_type_error(Type::String, self))
+            Value::String(value) => Ok(value.clone()),
+            _ => Err(Value::raise_unexpected_type_error(Type::String, self)),
         }
     }
-
-   
 
     pub fn sum(lv: &Value, rv: &Value) -> Result<Value, ValueError> {
         match (lv, rv) {
             (Value::Int(lv), Value::Int(rv)) => Ok(Value::Int(lv + rv)),
             (Value::Float(lv), Value::Float(rv)) => Ok(Value::Float(lv + rv)),
             (Value::String(lv), Value::String(rv)) => Ok(Value::String(lv.to_string() + rv)),
-            _ =>Err(Value::raise_incompatible_types_error(&lv, &rv, "+".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                &lv,
+                &rv,
+                "+".to_owned(),
+            )),
         }
     }
 
     pub fn and(lv: Value, rv: Value) -> Result<Value, ValueError> {
         match (&lv, &rv) {
             (Value::Bool(lv), Value::Bool(rv)) => Ok(Value::Bool(*lv && *rv)),
-            _ => Err(Value::raise_incompatible_types_error(&lv, &rv, "and".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                &lv,
+                &rv,
+                "and".to_owned(),
+            )),
         }
     }
 
     pub fn or(lv: Value, rv: Value) -> Result<Value, ValueError> {
         match (&lv, &rv) {
             (Value::Bool(lv), Value::Bool(rv)) => Ok(Value::Bool(*lv || *rv)),
-            _ => Err(Value::raise_incompatible_types_error(&lv, &rv, "and".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                &lv,
+                &rv,
+                "and".to_owned(),
+            )),
         }
     }
 
@@ -101,7 +110,11 @@ impl Value {
         match (lv, rv) {
             (Value::Int(lv), Value::Int(rv)) => Ok(Value::Int(lv * rv)),
             (Value::Float(lv), Value::Float(rv)) => Ok(Value::Float(lv * rv)),
-            _ => Err(Value::raise_incompatible_types_error(&lv, &rv, "*".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                &lv,
+                &rv,
+                "*".to_owned(),
+            )),
         }
     }
 
@@ -109,7 +122,11 @@ impl Value {
         match (lv, rv) {
             (Value::Int(lv), Value::Int(rv)) => Ok(Value::Int(lv / rv)),
             (Value::Float(lv), Value::Float(rv)) => Ok(Value::Float(lv / rv)),
-            _ => Err(Value::raise_incompatible_types_error(&lv, &rv, "*".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                &lv,
+                &rv,
+                "*".to_owned(),
+            )),
         }
     }
 
@@ -117,7 +134,11 @@ impl Value {
         match (lv, rv) {
             (Value::Int(lv), Value::Int(rv)) => Ok(Value::Int(lv.wrapping_sub(*rv))),
             (Value::Float(lv), Value::Float(rv)) => Ok(Value::Float(lv - rv)),
-            _ => Err(Value::raise_incompatible_types_error(&lv, &rv, "-".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                &lv,
+                &rv,
+                "-".to_owned(),
+            )),
         }
     }
 
@@ -127,7 +148,7 @@ impl Value {
             (Value::Int(lhs), Value::Int(rhs)) => Ok(Value::Bool(lhs == rhs)),
             (Value::Float(lhs), Value::Float(rhs)) => Ok(Value::Bool(lhs == rhs)),
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::Bool(lhs == rhs)),
-            (Value::Null, Value::Null) =>Ok(Value::Bool(true)),
+            (Value::Null, Value::Null) => Ok(Value::Bool(true)),
             _ => Ok(Value::Bool(false)),
         }
     }
@@ -138,7 +159,7 @@ impl Value {
             (Value::Int(lhs), Value::Int(rhs)) => Ok(Value::Bool(lhs != rhs)),
             (Value::Float(lhs), Value::Float(rhs)) => Ok(Value::Bool(lhs != rhs)),
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::Bool(lhs != rhs)),
-            (Value::Null, Value::Null) =>Ok(Value::Bool(false)),
+            (Value::Null, Value::Null) => Ok(Value::Bool(false)),
             _ => Ok(Value::Bool(true)),
         }
     }
@@ -148,7 +169,11 @@ impl Value {
             (Value::Int(lhs), Value::Int(rhs)) => Ok(Value::Bool(lhs < rhs)),
             (Value::Float(lhs), Value::Float(rhs)) => Ok(Value::Bool(lhs < rhs)),
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::Bool(lhs < rhs)),
-            _ => Err(Value::raise_incompatible_types_error(self, other, "<".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                self,
+                other,
+                "<".to_owned(),
+            )),
         }
     }
 
@@ -157,7 +182,11 @@ impl Value {
             (Value::Int(lhs), Value::Int(rhs)) => Ok(Value::Bool(lhs <= rhs)),
             (Value::Float(lhs), Value::Float(rhs)) => Ok(Value::Bool(lhs <= rhs)),
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::Bool(lhs <= rhs)),
-            _ => Err(Value::raise_incompatible_types_error(self, other, "<=".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                self,
+                other,
+                "<=".to_owned(),
+            )),
         }
     }
 
@@ -166,7 +195,11 @@ impl Value {
             (Value::Int(lhs), Value::Int(rhs)) => Ok(Value::Bool(lhs > rhs)),
             (Value::Float(lhs), Value::Float(rhs)) => Ok(Value::Bool(lhs > rhs)),
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::Bool(lhs > rhs)),
-            _ => Err(Value::raise_incompatible_types_error(self, other, ">".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                self,
+                other,
+                ">".to_owned(),
+            )),
         }
     }
 
@@ -175,22 +208,39 @@ impl Value {
             (Value::Int(lhs), Value::Int(rhs)) => Ok(Value::Bool(lhs >= rhs)),
             (Value::Float(lhs), Value::Float(rhs)) => Ok(Value::Bool(lhs >= rhs)),
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::Bool(lhs >= rhs)),
-            _ => Err(Value::raise_incompatible_types_error(self, other, ">=".to_owned())),
+            _ => Err(Value::raise_incompatible_types_error(
+                self,
+                other,
+                ">=".to_owned(),
+            )),
         }
     }
 
     fn raise_incompatible_types_error(v1: &Value, v2: &Value, op: String) -> ValueError {
-        ValueError::IncompatibleTypes { operation: op, lhs_type: Value::type_of(v1), lhs_value: format!("{}", v1), rhs_type: Value::type_of(v2), rhs_value: format!("{}", v2) }
+        ValueError::IncompatibleTypes {
+            operation: op,
+            lhs_type: Value::type_of(v1),
+            lhs_value: format!("{}", v1),
+            rhs_type: Value::type_of(v2),
+            rhs_value: format!("{}", v2),
+        }
     }
 
     pub fn raise_unexpected_type_error(expected_types: Type, actual: &Value) -> ValueError {
-        ValueError::UnexpectedType { expected_type:expected_types, actual_type: Value::type_of(actual), actual_value: format!("{}", actual)}
+        ValueError::UnexpectedType {
+            expected_type: expected_types,
+            actual_type: Value::type_of(actual),
+            actual_value: format!("{}", actual),
+        }
     }
 
     pub fn _raise_unexpected_type_error(expected_types: Vec<Type>, actual: &Value) -> ValueError {
-        ValueError::_UnexpectedType { expected_types:expected_types, actual_type: Value::type_of(actual), actual_value: format!("{}", actual)}
+        ValueError::_UnexpectedType {
+            expected_types: expected_types,
+            actual_type: Value::type_of(actual),
+            actual_value: format!("{}", actual),
+        }
     }
-
 }
 
 impl fmt::Display for Value {

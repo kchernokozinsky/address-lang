@@ -3,10 +3,9 @@ use std::iter::Peekable;
 use std::str::CharIndices;
 
 use crate::errors::LexError;
-use common::location::Location;
 use crate::matcher::*;
 use crate::token::TokenKind;
-
+use common::location::Location;
 
 pub struct Lexer<'a> {
     input: &'a str,
@@ -197,7 +196,11 @@ impl<'a> Lexer<'a> {
         let float_str = format!("{}.{}", integral_part, fractional_part);
 
         match float_str.parse::<f64>() {
-            Ok(value) => Ok((start_location, TokenKind::FloatLiteral(value), self.location)),
+            Ok(value) => Ok((
+                start_location,
+                TokenKind::FloatLiteral(value),
+                self.location,
+            )),
             Err(_) => Err(LexError::FloatFormatError(self.location, float_str)),
         }
     }

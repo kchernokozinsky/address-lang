@@ -29,7 +29,6 @@ impl Display for Type {
 }
 
 impl Type {
-
     pub fn from_str(s: &str) -> Option<Type> {
         match s {
             "null" => Some(Type::Null),

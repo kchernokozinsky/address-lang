@@ -1,10 +1,10 @@
 use common::location::Location;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Located<T =()> {
+pub struct Located<T = ()> {
     pub l_location: Location,
     pub r_location: Location,
-    pub node: T
+    pub node: T,
 }
 
 #[derive(Clone, Debug)]
@@ -58,19 +58,19 @@ pub enum OneLineStatementKind {
     },
     Exit,
     Return,
-    UnconditionalJump { label: String},
+    UnconditionalJump {
+        label: String,
+    },
 }
 
 pub type SimpleStatement = Located<SimpleStatementKind>;
 
-
 #[derive(Clone, Debug)]
 pub enum SimpleStatementKind {
-    Assign { lhs: Expression, rhs: Expression},
-    Send { lhs: Expression, rhs: Expression},
-    Exchange { lhs: Expression, rhs: Expression},
-    Expression { expression: Expression},
-
+    Assign { lhs: Expression, rhs: Expression },
+    Send { lhs: Expression, rhs: Expression },
+    Exchange { lhs: Expression, rhs: Expression },
+    Expression { expression: Expression },
 }
 
 pub type Expression = Located<ExpressionKind>;

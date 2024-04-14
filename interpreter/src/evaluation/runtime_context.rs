@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use super::{RuntimeError, Value};
+use std::collections::HashMap;
 pub struct RuntimeContext {
     functions: HashMap<String, Value>,
     variable_addresses: HashMap<String, i64>,
@@ -13,7 +13,7 @@ impl RuntimeContext {
             functions: HashMap::new(),
             variable_addresses: HashMap::new(),
             values_by_address: HashMap::new(),
-            labels: HashMap::new()
+            labels: HashMap::new(),
         }
     }
 
@@ -32,11 +32,11 @@ impl RuntimeContext {
         self.variable_addresses.insert(name.to_string(), address);
     }
     pub fn get_variable_address(&self, name: &str) -> Result<i64, String> {
-        self.variable_addresses.get(name)
-        .copied()
-        .ok_or_else(|| format!("Variable '{}' is not defined", name))
-}
-    
+        self.variable_addresses
+            .get(name)
+            .copied()
+            .ok_or_else(|| format!("Variable '{}' is not defined", name))
+    }
 
     pub fn allocate_variable(&mut self, name: &str) -> i64 {
         let address = self.generate_free_address();
@@ -45,9 +45,9 @@ impl RuntimeContext {
     }
 
     pub fn allocate_list(&mut self, elements: Vec<Value>) -> i64 {
-        let mut addresses: (i64, i64) = self.generate_free_address_for_list_element(); 
+        let mut addresses: (i64, i64) = self.generate_free_address_for_list_element();
         let head = addresses.0;
-        let mut i =  0;
+        let mut i = 0;
         for elem in elements.clone() {
             i += 1;
             self.write_to_address(addresses.0, Value::Null);
@@ -56,7 +56,7 @@ impl RuntimeContext {
             if i != elements.len() {
                 self.write_to_address(addresses.0, Value::new_int(next.0));
             }
-            
+
             addresses = next;
         }
         head
@@ -73,18 +73,24 @@ impl RuntimeContext {
         }
     }
 
-    pub fn free_variable(& mut self, name: &String) -> () {
+    pub fn free_variable(&mut self, name: &String) -> () {
         self.variable_addresses.remove(name);
     }
 
     pub fn register_label(&mut self, label: String, line: usize) -> Result<(), RuntimeError> {
         match self.labels.get(&label) {
-            Some(registered_line) => return Err(RuntimeError::LabelAlreadyRegistered(label, *registered_line + 1, line + 1)),
+            Some(registered_line) => {
+                return Err(RuntimeError::LabelAlreadyRegistered(
+                    label,
+                    *registered_line + 1,
+                    line + 1,
+                ))
+            }
             None => {
                 self.labels.insert(label, line);
-                Ok(())},
+                Ok(())
+            }
         }
-        
     }
 
     pub fn lookup_line_by_label(&self, label: &String) -> Option<&usize> {
@@ -101,7 +107,9 @@ impl RuntimeContext {
 
     fn generate_free_address_for_list_element(&self) -> (i64, i64) {
         let mut address = 0;
-        while self.values_by_address.contains_key(&address) || self.values_by_address.contains_key(&(address + 1)) {
+        while self.values_by_address.contains_key(&address)
+            || self.values_by_address.contains_key(&(address + 1))
+        {
             address += 1;
         }
         (address, address + 1)

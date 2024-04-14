@@ -2,13 +2,13 @@ pub mod builtins;
 pub mod errors;
 pub mod loop_;
 pub mod runtime_context;
-pub mod value;
 pub mod subprogram;
+pub mod value;
 
-use parser::ast::*;
 use common::location::Location;
 use common::typings::Type;
 use errors::*;
+use parser::ast::*;
 use runtime_context::*;
 use value::*;
 pub struct Evaluator {
@@ -43,7 +43,7 @@ impl Evaluator {
             let labels = line.labels();
             for label in labels {
                 match self.context.register_label(label.to_string(), index) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => return Err(EvaluationError::RuntimeErrorWithoutLocation(e)),
                 };
             }
@@ -52,7 +52,6 @@ impl Evaluator {
     }
 
     pub fn eval(&mut self) -> Result<(), EvaluationError> {
-
         self.extract_labels()?;
 
         loop {
@@ -153,9 +152,7 @@ impl Evaluator {
                     }
                 }
             }
-            OneLineStatementKind::SubProgram { .. } => {
-                return self.eval_subprogram_call(statement)
-            }
+            OneLineStatementKind::SubProgram { .. } => return self.eval_subprogram_call(statement),
             OneLineStatementKind::Return => return Ok(StatementResult::LocalStop),
         }
     }
@@ -545,7 +542,7 @@ impl Evaluator {
 
             ExpressionKind::Var { name } => match self.context.get_variable_address(&name) {
                 Ok(v) => Ok(Value::new_int(v)),
-                Err(_) => Ok(Value::new_int(self.context.allocate_variable(&name)))
+                Err(_) => Ok(Value::new_int(self.context.allocate_variable(&name))),
             },
 
             ExpressionKind::UnaryOp { op, expr } => match op {

@@ -1,5 +1,3 @@
-
-
 use super::*;
 
 impl Evaluator {
@@ -27,16 +25,14 @@ impl Evaluator {
                 };
 
                 let line_to = match label_to {
-                    Some(label_to) => {
-                        match self.context.lookup_line_by_label(label_to) {
-                            Some(l) => l.clone(),
-                            None => {
-                                return Err(EvaluationError::RuntimeError(
-                                    l_location,
-                                    r_location,
-                                    RuntimeError::LabelNotFound(label_to.to_string()),
-                                ))
-                            }
+                    Some(label_to) => match self.context.lookup_line_by_label(label_to) {
+                        Some(l) => l.clone(),
+                        None => {
+                            return Err(EvaluationError::RuntimeError(
+                                l_location,
+                                r_location,
+                                RuntimeError::LabelNotFound(label_to.to_string()),
+                            ))
                         }
                     },
                     None => self.current_line + 1,
@@ -49,7 +45,10 @@ impl Evaluator {
                 let line: FileLine = self.lines[cur].clone();
 
                 match line {
-                    FileLine::Line { labels: _, statements } => match statements {
+                    FileLine::Line {
+                        labels: _,
+                        statements,
+                    } => match statements {
                         Statements::OneLineStatement(one_line_statement) => {
                             return Err(EvaluationError::SubProgramDeclaration(
                                 one_line_statement.l_location,

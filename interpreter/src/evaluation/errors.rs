@@ -46,7 +46,11 @@ impl std::fmt::Display for ValueError {
                 "Expect type '{}', but actual : ({}: {})",
                 expected_type, actual_type, actual_value
             ),
-            ValueError::_UnexpectedType { expected_types, actual_type, actual_value } => write!(
+            ValueError::_UnexpectedType {
+                expected_types,
+                actual_type,
+                actual_value,
+            } => write!(
                 f,
                 "Expect types '{:?}', but actual : ({}: {})",
                 expected_types, actual_type, actual_value
@@ -100,11 +104,19 @@ impl std::fmt::Display for RuntimeError {
                 write!(f, "Function '{}' raised error: '{}'", func_name, error)
             }
             RuntimeError::InvalidArgumentsNumber(sp_name, expected_number, actual_number) => {
-                write!(f, "Invalid arguments number error: subprogram:  '{}', expected: {} , actual: {}", sp_name, expected_number, actual_number)
-            },
+                write!(
+                    f,
+                    "Invalid arguments number error: subprogram:  '{}', expected: {} , actual: {}",
+                    sp_name, expected_number, actual_number
+                )
+            }
             RuntimeError::LabelAlreadyRegistered(label_name, registered_line, try_line) => {
-                    write!(f, "Label '{}' can't be registered twice at line {}. It was registered at line {}", label_name, try_line, registered_line)
-            },
+                write!(
+                    f,
+                    "Label '{}' can't be registered twice at line {}. It was registered at line {}",
+                    label_name, try_line, registered_line
+                )
+            }
         }
     }
 }
@@ -125,10 +137,9 @@ pub enum EvaluationError {
     RuntimeErrorWithoutLocation(RuntimeError), // Integrating RuntimeError
     UnhandledStatement(Location, Location, SimpleStatementKind),
     UnhandledFormula(Location, Location, OneLineStatementKind),
-    UnhandledExpression(Location, Location, ExpressionKind),    // ...other errors
+    UnhandledExpression(Location, Location, ExpressionKind), // ...other errors
     SubProgramDeclaration(Location, Location, String),
     SubProgram(Location, Location, RuntimeError), // ...other errors
-
 }
 
 impl std::fmt::Display for EvaluationError {
@@ -175,11 +186,9 @@ impl std::fmt::Display for EvaluationError {
                 "SubProgram Error between {:?} and {:?}: {}",
                 left_loc, right_loc, runtime_error
             ),
-            EvaluationError::RuntimeErrorWithoutLocation(runtime_error) => write!(
-                f,
-                "Runtime Error : {}",
-                runtime_error
-            ),
+            EvaluationError::RuntimeErrorWithoutLocation(runtime_error) => {
+                write!(f, "Runtime Error : {}", runtime_error)
+            }
         }
     }
 }
@@ -200,7 +209,6 @@ pub struct EvaluationErrorPrinter {
 }
 
 impl EvaluationErrorPrinter {
-
     pub fn new(source_text: String) -> Self {
         EvaluationErrorPrinter { source_text }
     }
@@ -209,42 +217,63 @@ impl EvaluationErrorPrinter {
         match error {
             EvaluationError::SyntaxError(start_loc, end_loc, message) => {
                 self.print_error_message(start_loc, end_loc, message, "error");
-            },
+            }
             EvaluationError::TypeError(start_loc, end_loc, message) => {
                 self.print_error_message(start_loc, end_loc, message, "type error");
-            },
+            }
             EvaluationError::RuntimeError(start_loc, end_loc, runtime_error) => {
                 let message = format!("{}", runtime_error); // Assuming RuntimeError implements Display
                 self.print_error_message(start_loc, end_loc, &message, "runtime error");
-            },
+            }
             EvaluationError::UnhandledStatement(start_loc, end_loc, kind) => {
                 let message = format!("unhandled statement: {:?}", kind); // Assuming kind is Debug-printable
                 self.print_error_message(start_loc, end_loc, &message, "unhandled statement");
-            },
+            }
             EvaluationError::UnhandledExpression(start_loc, end_loc, kind) => {
                 let message = format!("unhandled expression: {:?}", kind);
                 self.print_error_message(start_loc, end_loc, &message, "unhandled expression");
-            },
+            }
             // Extend this pattern for other variants...
             _ => println!("{}", "Unhandled error variant".red()),
         }
     }
 
-    fn print_error_message(&self, start_loc: &Location, end_loc: &Location, message: &str, error_type: &str) {
+    fn print_error_message(
+        &self,
+        start_loc: &Location,
+        end_loc: &Location,
+        message: &str,
+        error_type: &str,
+    ) {
         if let Ok(code_line) = self.get_code_snippet(start_loc.row()) {
             let indent = " ".repeat(start_loc.row().to_string().len() + 1);
             let error_message = format!("\n{}: {}", error_type.red().bold(), message.red());
-            let location_indicator = format!("{}--> {}:{} .. {}:{}",indent, start_loc.row(), start_loc.column(), end_loc.row(), end_loc.column()).blue();
+            let location_indicator = format!(
+                "{}--> {}:{} .. {}:{}",
+                indent,
+                start_loc.row(),
+                start_loc.column(),
+                end_loc.row(),
+                end_loc.column()
+            )
+            .blue();
             let code_snippet = code_line.trim_end();
 
-            let end_column: usize = if end_loc.column() == 0 {code_line.len() + 1} else {end_loc.column()};
+            let end_column: usize = if end_loc.column() == 0 {
+                code_line.len() + 1
+            } else {
+                end_loc.column()
+            };
             // print error and location indicator
             println!("{}\n{}", error_message, location_indicator);
             println!("{}|\n{} | {}", indent, start_loc.row(), code_snippet);
 
-            let underline = " ".repeat(start_loc.column()) + &"^".repeat((end_column.saturating_sub(start_loc.column())).max(1)).red().to_string();
+            let underline = " ".repeat(start_loc.column())
+                + &"^"
+                    .repeat((end_column.saturating_sub(start_loc.column())).max(1))
+                    .red()
+                    .to_string();
             println!("{}|{}", indent, underline);
-
         } else {
             println!("Error locating source code for row {}", start_loc.row());
         }
@@ -258,6 +287,3 @@ impl EvaluationErrorPrinter {
             .ok_or("Line not found")
     }
 }
-
-
-

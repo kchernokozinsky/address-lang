@@ -49,15 +49,27 @@ pub fn match_tripple_symbol_token(a: char, b: char, c: char) -> Option<TokenKind
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_match_single_symbol_token() {
         assert_eq!(match_single_symbol_token('!'), Some(TokenKind::Bang));
-        assert_eq!(match_single_symbol_token('}'), Some(TokenKind::RightCurlyBrace));
-        assert_eq!(match_single_symbol_token('{'), Some(TokenKind::LeftCurlyBrace));
+        assert_eq!(
+            match_single_symbol_token('}'),
+            Some(TokenKind::RightCurlyBrace)
+        );
+        assert_eq!(
+            match_single_symbol_token('{'),
+            Some(TokenKind::LeftCurlyBrace)
+        );
         // ... test all other single symbols ...
-        assert_eq!(match_single_symbol_token(')'), Some(TokenKind::RightParenthesis));
-        assert_eq!(match_single_symbol_token('('), Some(TokenKind::LeftParenthesis));
+        assert_eq!(
+            match_single_symbol_token(')'),
+            Some(TokenKind::RightParenthesis)
+        );
+        assert_eq!(
+            match_single_symbol_token('('),
+            Some(TokenKind::LeftParenthesis)
+        );
         assert_eq!(match_single_symbol_token('\''), Some(TokenKind::Apostrophe));
         assert_eq!(match_single_symbol_token('|'), Some(TokenKind::VerticalBar));
         assert_eq!(match_single_symbol_token('@'), Some(TokenKind::At));
@@ -69,29 +81,45 @@ mod tests {
     }
 
     #[test]
-fn test_match_double_symbol_token() {
-    assert_eq!(match_double_symbol_token('!', '='), Some(TokenKind::NotEqual));
-    assert_eq!(match_double_symbol_token('=', '>'), Some(TokenKind::Send));
-    assert_eq!(match_double_symbol_token('=', '='), Some(TokenKind::EqualEqual));
-    assert_eq!(match_double_symbol_token('>', '='), Some(TokenKind::GreaterThanEqual));
-    assert_eq!(match_double_symbol_token('<', '='), Some(TokenKind::LessThanEqual));
+    fn test_match_double_symbol_token() {
+        assert_eq!(
+            match_double_symbol_token('!', '='),
+            Some(TokenKind::NotEqual)
+        );
+        assert_eq!(match_double_symbol_token('=', '>'), Some(TokenKind::Send));
+        assert_eq!(
+            match_double_symbol_token('=', '='),
+            Some(TokenKind::EqualEqual)
+        );
+        assert_eq!(
+            match_double_symbol_token('>', '='),
+            Some(TokenKind::GreaterThanEqual)
+        );
+        assert_eq!(
+            match_double_symbol_token('<', '='),
+            Some(TokenKind::LessThanEqual)
+        );
 
-    // Test for character pairs not in the match list
-    assert_eq!(match_double_symbol_token('a', 'b'), None);
-    assert_eq!(match_double_symbol_token('>', '>'), None);
-    assert_eq!(match_double_symbol_token('=', '<'), None);
-}
+        // Test for character pairs not in the match list
+        assert_eq!(match_double_symbol_token('a', 'b'), None);
+        assert_eq!(match_double_symbol_token('>', '>'), None);
+        assert_eq!(match_double_symbol_token('=', '<'), None);
+    }
 
-#[test]
-fn test_match_tripple_symbol_token() {
-    assert_eq!(match_tripple_symbol_token('.', '.', '.'), Some(TokenKind::Ellipsis));
-    assert_eq!(match_tripple_symbol_token('<', '=', '>'), Some(TokenKind::Exchange));
+    #[test]
+    fn test_match_tripple_symbol_token() {
+        assert_eq!(
+            match_tripple_symbol_token('.', '.', '.'),
+            Some(TokenKind::Ellipsis)
+        );
+        assert_eq!(
+            match_tripple_symbol_token('<', '=', '>'),
+            Some(TokenKind::Exchange)
+        );
 
-    // Test for character triples not in the match list
-    assert_eq!(match_tripple_symbol_token('a', 'b', 'c'), None);
-    assert_eq!(match_tripple_symbol_token('=', '=', '='), None);
-    assert_eq!(match_tripple_symbol_token('<', '<', '<'), None);
-}
-
-
+        // Test for character triples not in the match list
+        assert_eq!(match_tripple_symbol_token('a', 'b', 'c'), None);
+        assert_eq!(match_tripple_symbol_token('=', '=', '='), None);
+        assert_eq!(match_tripple_symbol_token('<', '<', '<'), None);
+    }
 }

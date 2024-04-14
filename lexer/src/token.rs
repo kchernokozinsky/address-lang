@@ -21,7 +21,7 @@ pub enum TokenKind {
     Minus,
     Slash,
     VerticalBar, // '|'
-    Ampersand,    // '&'
+    Ampersand,   // '&'
     LessThan,
     GreaterThan,
     Equal,
@@ -44,7 +44,7 @@ pub enum TokenKind {
     Loop,
     Predicate,
     SubProgram,
-    Deref, 
+    Deref,
     At,
     Bang,
 
@@ -115,7 +115,7 @@ impl fmt::Display for TokenKind {
             Del => f.write_str("del"),
             Loop => f.write_str("loop"),
             Replace => f.write_str("replace"),
-            Predicate => f.write_str("predicate"), 
+            Predicate => f.write_str("predicate"),
             SubProgram => f.write_str("subprogram"),
             Not => f.write_str("not"),
             Or => f.write_str("or"),
