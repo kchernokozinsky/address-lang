@@ -28,6 +28,8 @@ jobs:
           uses: actions-rust-lang/setup-rust-toolchain@v1
         - name: Test
           run: cargo test
+          env:
+            RUSTFLAGS: -Aunused_variables
 
     formatting:
             name: cargo fmt
