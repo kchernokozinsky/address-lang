@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - '**'
       - 'common/**'
       - 'interpreter/**'
       - 'lexer/**'
@@ -26,7 +27,7 @@ jobs:
         - name: Setup Rust
           uses: actions-rust-lang/setup-rust-toolchain@v1
         - name: Test
-          run: cargo test --all-features
+          run: cargo rustc -- -Awarnings && cargo test
 
     formatting:
             name: cargo fmt
