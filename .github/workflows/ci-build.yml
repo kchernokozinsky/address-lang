@@ -27,7 +27,7 @@ jobs:
         - name: Setup Rust
           uses: actions-rust-lang/setup-rust-toolchain@v1
         - name: Test
-          run: cargo rustc -- -Awarnings && cargo test
+          run: cargo test
 
     formatting:
             name: cargo fmt
