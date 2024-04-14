@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths:
-      - '**'
       - 'common/**'
       - 'interpreter/**'
       - 'lexer/**'
@@ -15,6 +14,9 @@ on:
       - 'interpreter/**'
       - 'lexer/**'
       - 'parser/**'    
+  workflow_dispatch:
+
+
 
 env:
   project_name: address-lang
@@ -30,13 +32,21 @@ jobs:
           run: cargo test
           env:
             RUSTFLAGS: -Aunused_variables
-
+    build:
+                runs-on: ubuntu-latest
+                steps:
+                - uses: actions/checkout@v3
+                - name: Setup Rust
+                  uses: actions-rust-lang/setup-rust-toolchain@v1
+                - name: Test
+                  run: cargo build
+                  env:
+                    RUSTFLAGS: -Aunused_variables
     formatting:
             name: cargo fmt
             runs-on: ubuntu-latest
             steps:
               - uses: actions/checkout@v4
-              # Ensure rustfmt is installed and setup problem matcher
               - uses: actions-rust-lang/setup-rust-toolchain@v1
                 with:
                   components: rustfmt
