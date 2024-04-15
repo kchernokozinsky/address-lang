@@ -143,7 +143,7 @@ impl<'a> Lexer<'a> {
             "SP" => TokenKind::SubProgram,
             "return" => TokenKind::Return,
             "D" => TokenKind::Deref,
-
+            "import" => TokenKind::Import,
             s => TokenKind::Identifier(s.to_string()),
         };
 
@@ -440,6 +440,7 @@ mod tests {
             ("R", TokenKind::Replace, 1, 2),
             ("or", TokenKind::Or, 1, 3),
             ("and", TokenKind::And, 1, 4),
+            ("import", TokenKind::Import, 1, 7)
         ];
 
         for (keyword, expected_token, row, col) in keywords {

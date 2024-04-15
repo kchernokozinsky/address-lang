@@ -59,6 +59,7 @@ pub enum TokenKind {
     Or,
     Let,
     Const,
+    Import
 }
 
 impl fmt::Display for TokenKind {
@@ -122,6 +123,7 @@ impl fmt::Display for TokenKind {
             Let => f.write_str("let"),
             Const => f.write_str("const"),
             Deref => f.write_str("dereference"),
+            Import => f.write_str("import"),
         }
     }
 }
