@@ -13,7 +13,7 @@ impl Evaluator {
                 args,
                 label_to,
             } => {
-                let sp_line = match self.context.lookup_line_by_label(sp_name) {
+                let sp_line = match self.context.lookup_line_by_label(&sp_name.identifier) {
                     Some(l) => l.clone(),
                     None => {
                         return Err(EvaluationError::RuntimeError(
@@ -77,7 +77,12 @@ impl Evaluator {
                                         }
                                     }
                                     SimpleStatementKind::Exchange { .. } => todo!(), // raise error,
-                                    SimpleStatementKind::Expression { .. } => todo!(), // raise error,
+                                    SimpleStatementKind::Expression { .. } => todo!(),
+                                    SimpleStatementKind::Import {
+                                        labels,
+                                        path,
+                                        alias,
+                                    } => todo!(),
                                 }
                             }
                             //

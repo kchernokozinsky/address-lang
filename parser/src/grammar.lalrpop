@@ -9,13 +9,13 @@ pub Algorithm: Algorithm = {
 };
 
 pub FileLine: FileLine = {
-         <labels: LabelsDeclaration?> <statements:Statements> "END_OF_FILE"=> { 
+         <labels: LabelsDeclaration?> <statements:Statements> "EndOfFile"=> { 
         match labels {
                         Some(labels) => FileLine::Line{labels, statements: statements},
                         None => FileLine::Line{labels: vec![], statements: statements}
                     }
                 },
-        <labels: LabelsDeclaration?> <statements:Statements> "NEW_LINE"=> { 
+        <labels: LabelsDeclaration?> <statements:Statements> "NewLine"=> { 
         match labels {
                         Some(labels) => FileLine::Line{labels, statements: statements},
                         None => FileLine::Line{labels: vec![], statements: statements}
@@ -49,7 +49,7 @@ pub OneLineStatement: OneLineStatement = {
             r_location,
             node: OneLineStatementKind::Exit,
         },
-    <l_location:@L> "RETURN" <r_location:@L> => OneLineStatement
+    <l_location:@L> "Return" <r_location:@L> => OneLineStatement
         {
             l_location,
             r_location,
@@ -58,7 +58,7 @@ pub OneLineStatement: OneLineStatement = {
 };
 
 pub CallSubProgram: OneLineStatement = {
-    <l_location:@L> "SUB_PROGRAM" <sp_name: Identifier> "{" <args: Parameters> "}" <label_to: Identifier?> <r_location:@L> => OneLineStatement
+    <l_location:@L> "SubProgram" <sp_name: SubProgramName> "{" <args: Parameters> "}" <label_to: Identifier?> <r_location:@L> => OneLineStatement
         {
             l_location,
             r_location,
@@ -71,8 +71,15 @@ pub CallSubProgram: OneLineStatement = {
 }
 };
 
+SubProgramName: Label = {
+    <mod_alias: (<Identifier> ":")?> <identifier: Identifier> => Label {
+        identifier,
+        mod_alias,
+    },
+};
+
 pub Predicate: OneLineStatement = {
-    <l_location:@L> "PREDICATE" "{" <condition:ExpressionPrecedence8> "}" <l:Statements> "|" <r:Statements> <r_location:@L> => OneLineStatement
+    <l_location:@L> "Predicate" "{" <condition:ExpressionPrecedence8> "}" <l:Statements> "|" <r:Statements> <r_location:@L> => OneLineStatement
         {
             l_location,
             r_location,
@@ -86,7 +93,7 @@ pub Predicate: OneLineStatement = {
 };
 
 pub Loop: OneLineStatement = {
-    <l_location:@L> "LOOP" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier?> <r_location:@L> => OneLineStatement
+    <l_location:@L> "Loop" "{" <a:Expression> "," <b:Expression> "," <c:Expression>  "=>" <e: Expression> "}" <alpha: Identifier> <betta: Identifier?> <r_location:@L> => OneLineStatement
         {
             l_location,
             r_location,
@@ -112,7 +119,27 @@ pub UnconditionalJump: OneLineStatement = {
         }
 };
 
+pub Import: SimpleStatement = {
+    <l_location:@L> "Import" "{" <labels: Labels> "}" "From" <path: Path> <alias:("As" <Identifier>)?> <r_location:@L> => SimpleStatement
+        {
+            l_location,
+            r_location,
+            node: SimpleStatementKind::Import{
+                labels,
+                path,
+                alias
+            },
+        }
+};
+
+Path: Path =
+    <a:"::"?> <h:(<Identifier> "::")*> <t:Identifier> => {
+        Path { absolute: a.is_some(),
+               ids: h }
+    };
+
 pub SimpleStatement: SimpleStatement = {
+    Import,
     <l_location:@L> <lhs:Expression> "=" <rhs:Expression> <r_location:@L> => SimpleStatement
         {
             l_location,
@@ -145,7 +172,7 @@ pub Expression: Expression = {
     };
 
 ExpressionPrecedence8: Expression = {
-    <l_location:@L> <lhs:ExpressionPrecedence8> "OR" <rhs:ExpressionPrecedence7> <r_location:@L> => Expression
+    <l_location:@L> <lhs:ExpressionPrecedence8> "Or" <rhs:ExpressionPrecedence7> <r_location:@L> => Expression
         {
             l_location,
             r_location,
@@ -156,7 +183,7 @@ ExpressionPrecedence8: Expression = {
 };
 
 ExpressionPrecedence7: Expression = {
-    <l_location:@L> <lhs:ExpressionPrecedence7> "AND" <rhs:ExpressionPrecedence6> <r_location:@L> => Expression
+    <l_location:@L> <lhs:ExpressionPrecedence7> "And" <rhs:ExpressionPrecedence6> <r_location:@L> => Expression
         {
             l_location,
             r_location,
@@ -226,7 +253,7 @@ ExpressionPrecedence3: Expression = {
 }
 
 ExpressionPrecedence2: Expression = {
-    <l_location:@L> "NOT" <expression:ExpressionPrecedence2> <r_location:@L> => Expression 
+    <l_location:@L> "Not" <expression:ExpressionPrecedence2> <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -261,7 +288,7 @@ LiteralExpression: Expression = {
 };
 
 FunctionCall: Expression = {
-    <l_location:@L> <function: "IDENTIFIER"> "{" <args: Parameters> "}" <r_location:@L> => Expression 
+    <l_location:@L> <function: "Identififer"> "{" <args: Parameters> "}" <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -270,7 +297,7 @@ FunctionCall: Expression = {
 }
 
 MultipleDereference: Expression = {
-        <l_location:@L>  "DEREF" "{" <expression:Expression>  "," <r: Expression> "}" <r_location:@L>  => Expression 
+        <l_location:@L>  "Deref" "{" <expression:Expression>  "," <r: Expression> "}" <r_location:@L>  => Expression 
         {
         l_location,
         r_location,
@@ -314,7 +341,7 @@ Parameters = Comma<Expression>;
 Elements = Comma<Expression>;
 
 Variable: Expression = {
-   <l_location:@L> <name:"IDENTIFIER"> <r_location:@L> => Expression 
+   <l_location:@L> <name:"Identififer"> <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -334,7 +361,7 @@ List: Expression = {
 };
 
 NullLiteral: Expression = {
-    <l_location:@L> <n:"NULL"> <r_location:@L> => Expression 
+    <l_location:@L> <n:"Null"> <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -344,7 +371,7 @@ NullLiteral: Expression = {
 
 
 IntLiteral: Expression = {
-   <l_location:@L> <n:"INTEGER_LITERAL"> <r_location:@L> => Expression 
+   <l_location:@L> <n:"Integer"> <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -353,7 +380,7 @@ IntLiteral: Expression = {
 };
 
 FloatLiteral: Expression = {
-   <l_location:@L> <n:"FLOAT_LITERAL"> <r_location:@L> => Expression 
+   <l_location:@L> <n:"Float"> <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -362,13 +389,13 @@ FloatLiteral: Expression = {
 }
 
 BoolLiteral: Expression = {
-    <l_location:@L> "TRUE" <r_location:@L> => Expression 
+    <l_location:@L> "True" <r_location:@L> => Expression 
         {
         l_location,
         r_location,
         node: ExpressionKind::Bool{value: true}
         },
-    <l_location:@L> "FALSE" <r_location:@L> => Expression 
+    <l_location:@L> "False" <r_location:@L> => Expression 
         {
         l_location,
         r_location,
@@ -377,14 +404,14 @@ BoolLiteral: Expression = {
 };
 
 StringLiteral: Expression = {
-   <l_location:@L> <s: "STRING_LITERAL"> <r_location:@L> => Expression {
+   <l_location:@L> <s: "String"> <r_location:@L> => Expression {
     l_location,
     r_location,
     node: ExpressionKind::String{value: s}}
 };
 
 Identifier: String = {
-    <i: "IDENTIFIER"> => i
+    <i: "Identififer"> => i
 };
 
 extern {
@@ -392,12 +419,12 @@ extern {
     type Error = LexError;
 
     enum TokenKind {
-    "IDENTIFIER" => TokenKind::Identifier (<String>),
-    "INTEGER_LITERAL" => TokenKind::IntegerLiteral (<i64>),
-    "FLOAT_LITERAL" => TokenKind::FloatLiteral (<f64>),
-    "STRING_LITERAL" => TokenKind::StringLiteral (<String>),
-    "NEW_LINE" => TokenKind::NewLine,
-    "END_OF_FILE" => TokenKind::EndOfFile,
+    "Identififer" => TokenKind::Identifier (<String>),
+    "Integer" => TokenKind::IntegerLiteral (<i64>),
+    "Float" => TokenKind::FloatLiteral (<f64>),
+    "String" => TokenKind::StringLiteral (<String>),
+    "NewLine" => TokenKind::NewLine,
+    "EndOfFile" => TokenKind::EndOfFile,
     "(" => TokenKind::LeftParenthesis,
         ")" => TokenKind::RightParenthesis,
         "[" => TokenKind::LeftSquareBracket,
@@ -427,24 +454,28 @@ extern {
         "//" => TokenKind::DoubleSlash,
         "=>" => TokenKind::Send,
         "..." => TokenKind::Ellipsis,
+        "::" => TokenKind::ColonColon,
         "'" => TokenKind::Apostrophe,
         "<=>" => TokenKind::Exchange,
-        "REPLACE" => TokenKind::Replace,
-        "LOOP" => TokenKind::Loop,
-        "PREDICATE" => TokenKind::Predicate,
-        "SUB_PROGRAM" =>TokenKind::SubProgram,
+        "Replace" => TokenKind::Replace,
+        "Loop" => TokenKind::Loop,
+        "Predicate" => TokenKind::Predicate,
+        "SubProgram" =>TokenKind::SubProgram,
         "@" => TokenKind::At,
         "!" => TokenKind::Bang,
-        "RETURN" => TokenKind::Return,
-        "FALSE" => TokenKind::False,
-        "NULL" => TokenKind::Null,
-        "TRUE" => TokenKind::True,
-        "AND" => TokenKind::And,
-        "DEL" => TokenKind::Del,
-        "NOT" => TokenKind::Not,
-        "OR" => TokenKind::Or,
-        "LET" => TokenKind::Let,
-        "CONST" => TokenKind::Const,
-        "DEREF" => TokenKind::Deref,
+        "Return" => TokenKind::Return,
+        "False" => TokenKind::False,
+        "Null" => TokenKind::Null,
+        "True" => TokenKind::True,
+        "And" => TokenKind::And,
+        "Del" => TokenKind::Del,
+        "Not" => TokenKind::Not,
+        "Or" => TokenKind::Or,
+        "Let" => TokenKind::Let,
+        "Const" => TokenKind::Const,
+        "Deref" => TokenKind::Deref,
+        "Import" => TokenKind::Import,
+        "From" => TokenKind::From,
+        "As" => TokenKind::As,
     }
 }

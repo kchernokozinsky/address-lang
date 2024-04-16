@@ -34,6 +34,7 @@ pub fn match_double_symbol_token(a: char, b: char) -> Option<TokenKind> {
         ('=', '=') => Some(TokenKind::EqualEqual),
         ('>', '=') => Some(TokenKind::GreaterThanEqual),
         ('<', '=') => Some(TokenKind::LessThanEqual),
+        (':', ':') => Some(TokenKind::ColonColon),
         _ => None,
     }
 }
@@ -98,6 +99,10 @@ mod tests {
         assert_eq!(
             match_double_symbol_token('<', '='),
             Some(TokenKind::LessThanEqual)
+        );
+        assert_eq!(
+            match_double_symbol_token(':', ':'),
+            Some(TokenKind::ColonColon)
         );
 
         // Test for character pairs not in the match list

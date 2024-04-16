@@ -1,3 +1,5 @@
+use core::fmt;
+
 use common::location::Location;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -39,7 +41,7 @@ pub type OneLineStatement = Located<OneLineStatementKind>;
 #[derive(Clone, Debug)]
 pub enum OneLineStatementKind {
     SubProgram {
-        sp_name: String,
+        sp_name: Label,
         args: Vec<Box<Expression>>,
         label_to: Option<String>,
     },
@@ -63,14 +65,51 @@ pub enum OneLineStatementKind {
     },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Label {
+    pub identifier: String,
+    pub mod_alias: Option<String>,
+}
+
+impl fmt::Display for Label {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.mod_alias.as_ref() {
+            Some(m) => write!(f, "{}::{}", m, self.identifier),
+            None => write!(f, "{}", self.identifier),
+        }
+    }
+}
+
 pub type SimpleStatement = Located<SimpleStatementKind>;
 
 #[derive(Clone, Debug)]
 pub enum SimpleStatementKind {
-    Assign { lhs: Expression, rhs: Expression },
-    Send { lhs: Expression, rhs: Expression },
-    Exchange { lhs: Expression, rhs: Expression },
-    Expression { expression: Expression },
+    Import {
+        labels: Vec<String>,
+        path: Path,
+        alias: Option<String>,
+    },
+    Assign {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    Send {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    Exchange {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    Expression {
+        expression: Expression,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Path {
+    pub absolute: bool,
+    pub ids: Vec<String>,
 }
 
 pub type Expression = Located<ExpressionKind>;
@@ -117,13 +156,11 @@ pub enum BinaryOp {
     NE,
     GT,
     LT,
-
     Sum,
     Sub,
     Mul,
     Div,
     Mod,
-
     And,
     Or,
 }

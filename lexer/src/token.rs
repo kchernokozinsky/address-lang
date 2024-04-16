@@ -59,7 +59,10 @@ pub enum TokenKind {
     Or,
     Let,
     Const,
-    Import
+    Import,
+    From,
+    As,
+    ColonColon,
 }
 
 impl fmt::Display for TokenKind {
@@ -104,6 +107,7 @@ impl fmt::Display for TokenKind {
             Exchange => f.write_str("<=>"),
             Ellipsis => f.write_str("..."),
             Apostrophe => f.write_str("'"),
+            ColonColon => f.write_str("::"),
             At => f.write_str("@"),
             Bang => f.write_str("!"),
             Return => f.write_str("return"),
@@ -124,6 +128,8 @@ impl fmt::Display for TokenKind {
             Const => f.write_str("const"),
             Deref => f.write_str("dereference"),
             Import => f.write_str("import"),
+            From => f.write_str("from"),
+            As => f.write_str("as"),
         }
     }
 }

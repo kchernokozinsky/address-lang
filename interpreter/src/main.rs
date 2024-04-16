@@ -6,6 +6,7 @@ use evaluation::{
 use parser::ast::Algorithm;
 
 pub mod evaluation;
+pub mod module;
 
 fn main() {
     let mut env = RuntimeContext::new();

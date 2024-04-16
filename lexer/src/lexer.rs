@@ -115,7 +115,7 @@ impl<'a> Lexer<'a> {
         self.location
     }
 
-    fn next_keyword_or_identirier_literal(&mut self) -> Span {
+    fn next_keyword_or_identifier_literal(&mut self) -> Span {
         let start = self.current_index;
         let start_loc = self.loc();
 
@@ -144,6 +144,8 @@ impl<'a> Lexer<'a> {
             "return" => TokenKind::Return,
             "D" => TokenKind::Deref,
             "import" => TokenKind::Import,
+            "from" => TokenKind::From,
+            "as" => TokenKind::As,
             s => TokenKind::Identifier(s.to_string()),
         };
 
@@ -387,7 +389,7 @@ impl<'a> Iterator for Lexer<'a> {
 
         // Processing next token based on the current character
         Some(if c.is_ascii_alphabetic() {
-            Ok(self.next_keyword_or_identirier_literal())
+            Ok(self.next_keyword_or_identifier_literal())
         } else if c.is_ascii_digit() {
             self.determine_number()
         } else if c == '"' {
@@ -440,7 +442,9 @@ mod tests {
             ("R", TokenKind::Replace, 1, 2),
             ("or", TokenKind::Or, 1, 3),
             ("and", TokenKind::And, 1, 4),
-            ("import", TokenKind::Import, 1, 7)
+            ("import", TokenKind::Import, 1, 7),
+            ("from", TokenKind::From, 1, 5),
+            ("as", TokenKind::As, 1, 3),
         ];
 
         for (keyword, expected_token, row, col) in keywords {
