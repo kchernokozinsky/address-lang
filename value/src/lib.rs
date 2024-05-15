@@ -1,4 +1,6 @@
-use crate::evaluation::errors::ValueError;
+pub mod error;
+
+use crate::error::ValueError;
 use common::typings::Type;
 use std::fmt::{self};
 
@@ -255,3 +257,4 @@ impl fmt::Display for Value {
         }
     }
 }
+

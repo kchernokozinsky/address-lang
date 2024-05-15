@@ -1,12 +1,12 @@
 use common::util::read_file;
 use evaluation::{
-    builtins::*, errors::EvaluationErrorPrinter, runtime_context::RuntimeContext, value::Value,
+    builtins::*, errors::EvaluationErrorPrinter, runtime_context::RuntimeContext,
     Evaluator,
 };
+use value::*;
 use parser::ast::Algorithm;
 
 pub mod evaluation;
-pub mod module;
 
 fn main() {
     let mut env = RuntimeContext::new();

@@ -3,13 +3,13 @@ pub mod errors;
 pub mod loop_;
 pub mod runtime_context;
 pub mod subprogram;
-pub mod value;
 
 use common::location::Location;
 use common::typings::Type;
 use errors::*;
 use parser::ast::*;
 use runtime_context::*;
+use value::error::ValueError;
 use value::*;
 pub struct Evaluator {
     lines: Vec<FileLine>,

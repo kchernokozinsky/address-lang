@@ -10,4 +10,5 @@ path = "src/main.rs"
 [dependencies]
 parser = { path = "../parser" }
 common = { path = "../common" }
+value = { path = "../value" }
 colored = "2.0"

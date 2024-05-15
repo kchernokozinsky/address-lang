@@ -1,4 +1,5 @@
-use super::{RuntimeError, Value};
+use super::{RuntimeError};
+use value::*;
 use std::collections::HashMap;
 pub struct RuntimeContext {
     functions: HashMap<String, Value>,
