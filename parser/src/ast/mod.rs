@@ -1,3 +1,5 @@
+pub mod visitor;
+
 use core::fmt;
 
 use common::location::Location;

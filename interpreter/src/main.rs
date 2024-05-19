@@ -1,10 +1,9 @@
 use common::util::read_file;
 use evaluation::{
-    builtins::*, errors::EvaluationErrorPrinter, runtime_context::RuntimeContext,
-    Evaluator,
+    builtins::*, errors::EvaluationErrorPrinter, runtime_context::RuntimeContext, Evaluator,
 };
-use value::*;
 use parser::ast::Algorithm;
+use value::*;
 
 pub mod evaluation;
 

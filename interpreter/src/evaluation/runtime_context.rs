@@ -1,6 +1,6 @@
-use super::{RuntimeError};
-use value::*;
+use super::RuntimeError;
 use std::collections::HashMap;
+use value::*;
 pub struct RuntimeContext {
     functions: HashMap<String, Value>,
     variable_addresses: HashMap<String, i64>,
