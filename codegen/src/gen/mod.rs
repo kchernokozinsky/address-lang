@@ -191,12 +191,6 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 self.bytecode.push(Bytecode::Jump(0)); // Placeholder
                 self.jumps.push((jump_pos, label.clone()));
 
-                // If the jump is to a label outside the current loop, exit the loop
-                // if let Some(current_loop) = self.loop_context.last() {
-                //     if self.labels.contains_key(label) && label != &current_loop.start_label && label != &current_loop.end_label {
-                //         self.bytecode.push(Bytecode::Jump(self.labels[&current_loop.end_label]));
-                //     }
-                // }
             }
             // Handling other OneLineStatementKind cases...
             _ => {}
@@ -216,7 +210,13 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 }
             }
             SimpleStatementKind::Expression { expression } => expression.accept(self),
-            _ => {}
+            SimpleStatementKind::Import { labels, path, alias } => todo!(),
+            SimpleStatementKind::Send { lhs, rhs } => {
+                rhs.accept(self);
+                lhs.accept(self);
+                self.bytecode.push(Bytecode::Alloc);
+            },
+            SimpleStatementKind::Exchange { lhs, rhs } => todo!(),
         }
     }
 

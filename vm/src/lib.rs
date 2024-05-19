@@ -26,13 +26,20 @@ impl VM {
         while self.pc < self.bytecode.len() {
             let instruction = self.bytecode[self.pc].clone();
             self.pc += 1;
-            // println!("---{:?}---", self.pc);
-            // println!("{:?}", instruction);
+            println!("---{:?}---", self.pc);
+            println!("{:?}", instruction);
             
             match instruction {
                 Bytecode::Constant(value) => self.stack.push(value),
                 Bytecode::GetVar(name) => {
-                    let address = *self.variable_addresses.get(&name).unwrap();
+                    let address =  match self.variable_addresses.get(&name) {
+                        Some(address) => address.clone(),
+                        None => {
+                            let address = self.values_by_address.len() as i64;
+                            self.variable_addresses.insert(name, address);
+                            address
+                        },
+                    };
                     self.stack.push(Value::Int(address));
                 }
                 Bytecode::SetVar(name) => {
@@ -69,8 +76,8 @@ impl VM {
                 Bytecode::Send => unimplemented!(),
                 Bytecode::Deref => {
                     let value = self.stack.pop().unwrap();
-                    // println!("val: {:?}", value);
-                    // println!("hashmap: {:?}", self.values_by_address);
+                    println!("val: {:?}", value);
+                    println!("hashmap: {:?}", self.values_by_address);
                     match value {
                         Value::Null => todo!(),
                         Value::Float(_) => todo!(),
@@ -100,9 +107,9 @@ impl VM {
                 Bytecode::CallProc(_) => todo!(),
                 Bytecode::CallFn(_) => todo!(),
             }
-            // println!("stack: {:?}", self.stack);
+            println!("stack: {:?}", self.stack);
         }
-        
+        // print!("stackL: {:?}", self.stack);
     }
 
     fn binary_op<F>(&mut self, op: F)

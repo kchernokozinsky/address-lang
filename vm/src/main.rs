@@ -16,4 +16,5 @@ fn main() {
     println!("{:?}", bytecode);
     let mut vm = VM::new(bytecode);
     vm.run();
+    
 }
