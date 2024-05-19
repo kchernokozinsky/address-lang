@@ -1,0 +1,412 @@
+{
+    "Body": [
+        {
+            "Line": {
+                "labels": [],
+                "statements": {
+                    "OneLineStatement": {
+                        "l_location": {
+                            "row": 1,
+                            "column": 1,
+                            "previos_column": 1
+                        },
+                        "r_location": {
+                            "row": 2,
+                            "column": 0,
+                            "previos_column": 25
+                        },
+                        "node": {
+                            "Loop": {
+                                "initial_value": {
+                                    "l_location": {
+                                        "row": 1,
+                                        "column": 4,
+                                        "previos_column": 4
+                                    },
+                                    "r_location": {
+                                        "row": 1,
+                                        "column": 5,
+                                        "previos_column": 4
+                                    },
+                                    "node": {
+                                        "Int": {
+                                            "value": 1
+                                        }
+                                    }
+                                },
+                                "step": {
+                                    "l_location": {
+                                        "row": 1,
+                                        "column": 7,
+                                        "previos_column": 6
+                                    },
+                                    "r_location": {
+                                        "row": 1,
+                                        "column": 8,
+                                        "previos_column": 7
+                                    },
+                                    "node": {
+                                        "Int": {
+                                            "value": 1
+                                        }
+                                    }
+                                },
+                                "last_value_or_condition": {
+                                    "l_location": {
+                                        "row": 1,
+                                        "column": 10,
+                                        "previos_column": 9
+                                    },
+                                    "r_location": {
+                                        "row": 1,
+                                        "column": 16,
+                                        "previos_column": 15
+                                    },
+                                    "node": {
+                                        "BinaryOp": {
+                                            "op": "LT",
+                                            "lhs": {
+                                                "l_location": {
+                                                    "row": 1,
+                                                    "column": 10,
+                                                    "previos_column": 9
+                                                },
+                                                "r_location": {
+                                                    "row": 1,
+                                                    "column": 12,
+                                                    "previos_column": 11
+                                                },
+                                                "node": {
+                                                    "UnaryOp": {
+                                                        "op": "Dereference",
+                                                        "expr": {
+                                                            "l_location": {
+                                                                "row": 1,
+                                                                "column": 11,
+                                                                "previos_column": 11
+                                                            },
+                                                            "r_location": {
+                                                                "row": 1,
+                                                                "column": 12,
+                                                                "previos_column": 11
+                                                            },
+                                                            "node": {
+                                                                "Var": {
+                                                                    "name": "i"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "rhs": {
+                                                "l_location": {
+                                                    "row": 1,
+                                                    "column": 15,
+                                                    "previos_column": 14
+                                                },
+                                                "r_location": {
+                                                    "row": 1,
+                                                    "column": 16,
+                                                    "previos_column": 15
+                                                },
+                                                "node": {
+                                                    "Int": {
+                                                        "value": 6
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "iterator": {
+                                    "l_location": {
+                                        "row": 1,
+                                        "column": 20,
+                                        "previos_column": 19
+                                    },
+                                    "r_location": {
+                                        "row": 1,
+                                        "column": 21,
+                                        "previos_column": 20
+                                    },
+                                    "node": {
+                                        "Var": {
+                                            "name": "i"
+                                        }
+                                    }
+                                },
+                                "label_until": "a",
+                                "label_to": "b"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [],
+                "statements": {
+                    "SimpleStatements": []
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [],
+                "statements": {
+                    "SimpleStatements": [
+                        {
+                            "l_location": {
+                                "row": 3,
+                                "column": 2,
+                                "previos_column": 1
+                            },
+                            "r_location": {
+                                "row": 3,
+                                "column": 7,
+                                "previos_column": 6
+                            },
+                            "node": {
+                                "Expression": {
+                                    "expression": {
+                                        "l_location": {
+                                            "row": 3,
+                                            "column": 2,
+                                            "previos_column": 1
+                                        },
+                                        "r_location": {
+                                            "row": 3,
+                                            "column": 7,
+                                            "previos_column": 6
+                                        },
+                                        "node": {
+                                            "BinaryOp": {
+                                                "op": "Sum",
+                                                "lhs": {
+                                                    "l_location": {
+                                                        "row": 3,
+                                                        "column": 2,
+                                                        "previos_column": 1
+                                                    },
+                                                    "r_location": {
+                                                        "row": 3,
+                                                        "column": 3,
+                                                        "previos_column": 2
+                                                    },
+                                                    "node": {
+                                                        "Int": {
+                                                            "value": 0
+                                                        }
+                                                    }
+                                                },
+                                                "rhs": {
+                                                    "l_location": {
+                                                        "row": 3,
+                                                        "column": 6,
+                                                        "previos_column": 5
+                                                    },
+                                                    "r_location": {
+                                                        "row": 3,
+                                                        "column": 7,
+                                                        "previos_column": 6
+                                                    },
+                                                    "node": {
+                                                        "Int": {
+                                                            "value": 0
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [
+                    "a"
+                ],
+                "statements": {
+                    "SimpleStatements": []
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [],
+                "statements": {
+                    "SimpleStatements": []
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [],
+                "statements": {
+                    "SimpleStatements": [
+                        {
+                            "l_location": {
+                                "row": 6,
+                                "column": 1,
+                                "previos_column": 0
+                            },
+                            "r_location": {
+                                "row": 7,
+                                "column": 0,
+                                "previos_column": 5
+                            },
+                            "node": {
+                                "Expression": {
+                                    "expression": {
+                                        "l_location": {
+                                            "row": 6,
+                                            "column": 1,
+                                            "previos_column": 0
+                                        },
+                                        "r_location": {
+                                            "row": 7,
+                                            "column": 0,
+                                            "previos_column": 5
+                                        },
+                                        "node": {
+                                            "BinaryOp": {
+                                                "op": "Sum",
+                                                "lhs": {
+                                                    "l_location": {
+                                                        "row": 6,
+                                                        "column": 1,
+                                                        "previos_column": 0
+                                                    },
+                                                    "r_location": {
+                                                        "row": 6,
+                                                        "column": 2,
+                                                        "previos_column": 1
+                                                    },
+                                                    "node": {
+                                                        "Int": {
+                                                            "value": 1
+                                                        }
+                                                    }
+                                                },
+                                                "rhs": {
+                                                    "l_location": {
+                                                        "row": 6,
+                                                        "column": 5,
+                                                        "previos_column": 4
+                                                    },
+                                                    "r_location": {
+                                                        "row": 7,
+                                                        "column": 0,
+                                                        "previos_column": 5
+                                                    },
+                                                    "node": {
+                                                        "Int": {
+                                                            "value": 1
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [],
+                "statements": {
+                    "SimpleStatements": []
+                }
+            }
+        },
+        {
+            "Line": {
+                "labels": [
+                    "b"
+                ],
+                "statements": {
+                    "SimpleStatements": [
+                        {
+                            "l_location": {
+                                "row": 8,
+                                "column": 6,
+                                "previos_column": 5
+                            },
+                            "r_location": {
+                                "row": 8,
+                                "column": 11,
+                                "previos_column": 10
+                            },
+                            "node": {
+                                "Expression": {
+                                    "expression": {
+                                        "l_location": {
+                                            "row": 8,
+                                            "column": 6,
+                                            "previos_column": 5
+                                        },
+                                        "r_location": {
+                                            "row": 8,
+                                            "column": 11,
+                                            "previos_column": 10
+                                        },
+                                        "node": {
+                                            "BinaryOp": {
+                                                "op": "Sum",
+                                                "lhs": {
+                                                    "l_location": {
+                                                        "row": 8,
+                                                        "column": 6,
+                                                        "previos_column": 5
+                                                    },
+                                                    "r_location": {
+                                                        "row": 8,
+                                                        "column": 7,
+                                                        "previos_column": 6
+                                                    },
+                                                    "node": {
+                                                        "Int": {
+                                                            "value": 2
+                                                        }
+                                                    }
+                                                },
+                                                "rhs": {
+                                                    "l_location": {
+                                                        "row": 8,
+                                                        "column": 10,
+                                                        "previos_column": 9
+                                                    },
+                                                    "r_location": {
+                                                        "row": 8,
+                                                        "column": 11,
+                                                        "previos_column": 10
+                                                    },
+                                                    "node": {
+                                                        "Int": {
+                                                            "value": 2
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

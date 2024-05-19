@@ -12,7 +12,7 @@ fn main() {
     env.add_function("Print", Value::new_function(print_));
     env.add_function("Str", Value::new_function(to_string_));
 
-    let source_text = read_file("examples/subprogram/list.adl");
+    let source_text = read_file("examples/loop/simple_loop.adl");
     let ast: Algorithm = parser::parse(&source_text).unwrap();
 
     // println!("{:?}", ast);

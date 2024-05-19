@@ -132,6 +132,7 @@ impl<'a> Lexer<'a> {
             "const" => TokenKind::Const,
             "let" => TokenKind::Let,
             "null" => TokenKind::Null,
+            "not" => TokenKind::Not,
             "true" => TokenKind::True,
             "false" => TokenKind::False,
             "del" => TokenKind::Del,

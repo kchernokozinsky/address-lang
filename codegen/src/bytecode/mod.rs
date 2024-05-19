@@ -1,10 +1,12 @@
 use value::Value;
 
+pub mod io;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Bytecode {
     Halt,
     Return,
-    Constant(Value), // Example: Constant values, can be extended to other types
+    Constant(Value),
     Not,
     And,
     Or,
@@ -15,9 +17,11 @@ pub enum Bytecode {
     Div,
     Mod,
     Equal,
+    NotEqual,
     Greater,
     Less,
     Pop,
+    Label(String),
     Jump(usize),
     JumpIfFalse(usize),
     Send,

@@ -1,0 +1,26 @@
+0     LOAD_CONST              1
+1     STORE_NAME              i
+2     LABEL                   loop_start_2
+3     LOAD_NAME               i
+4     DEREFERENCE
+5     LOAD_CONST              6
+6     COMPARE_OP LT
+7     JUMP_IF_FALSE           22
+8     LABEL                   loop_body_start_8
+9     LOAD_CONST              0
+10    LOAD_CONST              0
+11    BINARY_ADD
+12    JUMP                    18
+13    LOAD_CONST              1
+14    BINARY_ADD
+15    STORE_NAME              i
+16    JUMP                    2
+17    LABEL                   loop_end_8
+18    LABEL                   c
+19    LOAD_CONST              1
+20    LOAD_CONST              1
+21    BINARY_ADD
+22    LABEL                   b
+23    LOAD_CONST              2
+24    LOAD_CONST              2
+25    BINARY_ADD

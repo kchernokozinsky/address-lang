@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Clone, Copy, Default, Eq)]
+#[derive(Clone, Copy, Default, Eq, Serialize, Deserialize)]
 pub struct Location {
     row: usize,
     column: usize,
