@@ -256,7 +256,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 self.bytecode.push(Bytecode::PushScope);
 
                 let local_variables = self.bind_names(&sp_name.identifier, args.len());
-                for local_var in local_variables.iter().rev(){
+                for local_var in local_variables.iter().rev() {
                     self.bytecode
                         .push(Bytecode::BindAddr(local_var.to_string()));
                 }

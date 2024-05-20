@@ -66,10 +66,7 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
         Bytecode::FreeAddr => format!("{:<5} {}\n", offset, "FREE_ADDR"),
         Bytecode::CallSubProgram(label, arity) => format!(
             "{:<5} {:<23} {} ({})\n",
-            offset,
-            "CALL_SUBPROGRAM",
-            label,
-            arity
+            offset, "CALL_SUBPROGRAM", label, arity
         ),
         Bytecode::PushScope => format!("{:<5} {}\n", offset, "PUSH_SCOPE"),
         Bytecode::PopScope => format!("{:<5} {}\n", offset, "POP_SCOPE"),

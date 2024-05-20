@@ -1,5 +1,5 @@
-use std::{collections::HashMap, f32::NAN};
 use log::{debug, info, trace, warn};
+use std::{collections::HashMap, f32::NAN};
 
 use codegen::bytecode::Bytecode;
 use value::Value;
