@@ -55,6 +55,10 @@ impl<'a> BytecodeGenerator<'a> {
             while self.current_position < lines.len() {
                 let line = &lines[self.current_position];
                 if let FileLine::Line { labels, statements } = line {
+                    for label in labels {
+                        self.labels.insert(label.clone(), self.bytecode.len());
+                        self.bytecode.push(Bytecode::Label(label.clone()));
+                    }
                     if labels.contains(&label_until.to_string()) {
                         break;
                     }
@@ -190,10 +194,37 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 let jump_pos = self.bytecode.len();
                 self.bytecode.push(Bytecode::Jump(0)); // Placeholder
                 self.jumps.push((jump_pos, label.clone()));
-
             }
+            OneLineStatementKind::SubProgram { sp_name, args, label_to } => todo!(),
+            OneLineStatementKind::Predicate { condition, if_true, if_false } =>{
+                // Evaluate the condition
+                condition.accept(self);
+
+                // Generate a placeholder jump for false condition
+                let jump_if_false_pos = self.bytecode.len();
+                self.bytecode.push(Bytecode::JumpIfFalse(0)); // Placeholder
+
+                // Generate bytecode for the true branch
+                if_true.accept(self);
+
+                // Generate a jump to skip the false branch
+                let jump_to_end_pos = self.bytecode.len();
+                self.bytecode.push(Bytecode::Jump(0)); // Placeholder
+
+                // Set the placeholder for the false branch
+                let false_branch_pos = self.bytecode.len();
+                self.bytecode[jump_if_false_pos] = Bytecode::JumpIfFalse(false_branch_pos);
+
+                // Generate bytecode for the false branch if it exists
+                 if_false.accept(self);
+
+                // Set the placeholder for the end of the false branch
+                let end_pos = self.bytecode.len();
+                self.bytecode[jump_to_end_pos] = Bytecode::Jump(end_pos);
+            },
+            OneLineStatementKind::Exit => self.bytecode.push(Bytecode::Halt),
+            OneLineStatementKind::Return => self.bytecode.push(Bytecode::Return),
             // Handling other OneLineStatementKind cases...
-            _ => {}
         }
     }
 
@@ -210,12 +241,16 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 }
             }
             SimpleStatementKind::Expression { expression } => expression.accept(self),
-            SimpleStatementKind::Import { labels, path, alias } => todo!(),
+            SimpleStatementKind::Import {
+                labels,
+                path,
+                alias,
+            } => todo!(),
             SimpleStatementKind::Send { lhs, rhs } => {
                 rhs.accept(self);
                 lhs.accept(self);
                 self.bytecode.push(Bytecode::Alloc);
-            },
+            }
             SimpleStatementKind::Exchange { lhs, rhs } => todo!(),
         }
     }

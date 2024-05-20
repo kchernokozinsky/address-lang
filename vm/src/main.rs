@@ -2,6 +2,7 @@ use codegen::gen::BytecodeGenerator;
 use common::util::read_file;
 use parser::ast::visitor::Visitor;
 use parser::ast::*;
+use vm::builtins::builtin_print;
 use vm::VM;
 
 fn main() {
@@ -15,6 +16,6 @@ fn main() {
     let bytecode = generator.get_bytecode();
     println!("{:?}", bytecode);
     let mut vm = VM::new(bytecode);
+    vm.register_builtin("Print", builtin_print);
     vm.run();
-    
 }

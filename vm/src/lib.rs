@@ -2,14 +2,17 @@ use std::collections::HashMap;
 
 use codegen::bytecode::Bytecode;
 use value::Value;
-
+pub mod builtins;
 pub struct VM {
     bytecode: Vec<Bytecode>,
     pc: usize,
     stack: Vec<Value>,
     variable_addresses: HashMap<String, i64>,
     values_by_address: HashMap<i64, Value>,
+    builtins: HashMap<String, BuiltinFunction>,
 }
+
+type BuiltinFunction = fn(&mut VM, Vec<Value>) -> Value;
 
 impl VM {
     pub fn new(bytecode: Vec<Bytecode>) -> Self {
@@ -19,26 +22,31 @@ impl VM {
             stack: Vec::new(),
             variable_addresses: HashMap::new(),
             values_by_address: HashMap::new(),
+            builtins: HashMap::new(),
         }
+    }
+
+    pub fn register_builtin(&mut self, name: &str, func: BuiltinFunction) {
+        self.builtins.insert(name.to_string(), func);
     }
 
     pub fn run(&mut self) {
         while self.pc < self.bytecode.len() {
             let instruction = self.bytecode[self.pc].clone();
             self.pc += 1;
-            println!("---{:?}---", self.pc);
-            println!("{:?}", instruction);
-            
+            // println!("---{:?}---", self.pc);
+            // println!("{:?}", instruction);
+
             match instruction {
                 Bytecode::Constant(value) => self.stack.push(value),
                 Bytecode::GetVar(name) => {
-                    let address =  match self.variable_addresses.get(&name) {
+                    let address = match self.variable_addresses.get(&name) {
                         Some(address) => address.clone(),
                         None => {
                             let address = self.values_by_address.len() as i64;
                             self.variable_addresses.insert(name, address);
                             address
-                        },
+                        }
                     };
                     self.stack.push(Value::Int(address));
                 }
@@ -56,7 +64,10 @@ impl VM {
                 Bytecode::Equal => self.binary_op_cmp(|a, b| a == b),
                 Bytecode::NotEqual => self.binary_op_cmp(|a, b| a != b),
                 Bytecode::Greater => self.binary_op_cmp(|a, b| a > b),
-                Bytecode::Less => {println!("{:?}", self.values_by_address[&0]);self.binary_op_cmp(|a, b| a < b)},
+                Bytecode::Less => {
+                    // println!("{:?}", self.values_by_address[&0]);
+                    self.binary_op_cmp(|a, b| a < b)
+                }
                 Bytecode::Not => self.unary_op_bool(|a| !a),
                 Bytecode::Negate => self.unary_op(|a| -a),
                 Bytecode::Jump(addr) => self.pc = addr,
@@ -67,7 +78,19 @@ impl VM {
                     }
                 }
                 Bytecode::Label(_) => {}
-                Bytecode::Call(_, _) => unimplemented!(),
+                Bytecode::Call(name, argc) => {
+                    let mut args = Vec::new();
+                    for _ in 0..argc {
+                        args.push(self.stack.pop().unwrap());
+                    }
+                    args.reverse();
+                    if let Some(func) = self.builtins.get(&name) {
+                        let result = func(self, args);
+                        self.stack.push(result);
+                    } else {
+                        panic!("Undefined function: {}", name);
+                    }
+                }
                 Bytecode::Return => return,
                 Bytecode::Halt => break,
                 Bytecode::Pop => {
@@ -76,21 +99,20 @@ impl VM {
                 Bytecode::Send => unimplemented!(),
                 Bytecode::Deref => {
                     let value = self.stack.pop().unwrap();
-                    println!("val: {:?}", value);
-                    println!("hashmap: {:?}", self.values_by_address);
                     match value {
                         Value::Null => todo!(),
                         Value::Float(_) => todo!(),
                         Value::String(_) => todo!(),
                         Value::Bool(_) => todo!(),
-                        Value::Int(address) => self.stack.push(self.values_by_address[&address].clone()),
+                        Value::Int(address) => {
+                            self.stack.push(self.values_by_address[&address].clone())
+                        }
                         Value::Function(_) => todo!(),
                     }
-                },
+                }
                 Bytecode::MulDeref => unimplemented!(),
                 Bytecode::Alloc => {
                     let addr = self.stack.pop().unwrap();
-                    
 
                     match addr {
                         Value::Null => todo!(),
@@ -100,14 +122,14 @@ impl VM {
                         Value::Int(address) => {
                             let value = self.stack.pop().unwrap();
                             self.values_by_address.insert(address, value);
-                        },
+                        }
                         Value::Function(_) => todo!(),
                     }
-                },
+                }
                 Bytecode::CallProc(_) => todo!(),
                 Bytecode::CallFn(_) => todo!(),
             }
-            println!("stack: {:?}", self.stack);
+            // println!("stack: {:?}", self.stack);
         }
         // print!("stackL: {:?}", self.stack);
     }

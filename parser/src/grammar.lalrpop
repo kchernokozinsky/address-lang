@@ -211,6 +211,12 @@ ExpressionPrecedence6: Expression = {
             r_location,
             node: ExpressionKind::BinaryOp{op: BinaryOp::LT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
         },
+        <l_location:@L> <lhs:ExpressionPrecedence6> ">" <rhs:ExpressionPrecedence5> <r_location:@L> => Expression
+        {
+            l_location,
+            r_location,
+            node: ExpressionKind::BinaryOp{op: BinaryOp::GT, lhs: Box::new(lhs), rhs: Box::new(rhs)},
+        },
     ExpressionPrecedence5
 }
 
