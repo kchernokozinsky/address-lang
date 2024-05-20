@@ -140,6 +140,12 @@ Path: Path =
 
 pub SimpleStatement: SimpleStatement = {
     Import,
+    <l_location:@L> "Del" <rhs:Expression> <r_location:@L> => SimpleStatement
+        {
+            l_location,
+            r_location,
+            node: SimpleStatementKind::Del{rhs},
+        },
     <l_location:@L> <lhs:Expression> "=" <rhs:Expression> <r_location:@L> => SimpleStatement
         {
             l_location,

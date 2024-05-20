@@ -83,6 +83,7 @@ impl Evaluator {
                                         path,
                                         alias,
                                     } => todo!(),
+                                    SimpleStatementKind::Del { rhs } => todo!(),
                                 }
                             }
                             //

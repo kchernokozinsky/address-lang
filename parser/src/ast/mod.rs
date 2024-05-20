@@ -92,6 +92,9 @@ pub enum SimpleStatementKind {
         path: Path,
         alias: Option<String>,
     },
+    Del {
+        rhs: Expression,
+    },
     Assign {
         lhs: Expression,
         rhs: Expression,

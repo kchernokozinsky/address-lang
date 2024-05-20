@@ -51,43 +51,63 @@ impl<'a> BytecodeGenerator<'a> {
     }
 
     fn visit_loop_body(&mut self, label_until: &str) {
-        if let Algorithm::Body(lines) = self.ast {
-            while self.current_position < lines.len() {
-                let line = &lines[self.current_position];
-                if let FileLine::Line { labels, statements } = line {
-                    for label in labels {
-                        self.labels.insert(label.clone(), self.bytecode.len());
-                        self.bytecode.push(Bytecode::Label(label.clone()));
+        match self.ast {
+            Algorithm::Body(lines) => {
+                while self.current_position < lines.len() {
+                    let line = &lines[self.current_position];
+                    match line {
+                        FileLine::Line { labels, statements } => {
+                            for label in labels {
+                                self.labels.insert(label.clone(), self.bytecode.len());
+                                self.bytecode.push(Bytecode::Label(label.clone()));
+                            }
+                            if labels.contains(&label_until.to_string()) {
+                                break;
+                            }
+                            statements.accept(self);
+                        }
                     }
-                    if labels.contains(&label_until.to_string()) {
-                        break;
-                    }
-                    statements.accept(self);
+                    self.current_position += 1;
                 }
-                self.current_position += 1;
             }
         }
+    }
+
+    fn generate_list(&mut self, elements: &[Box<Expression>]) {
+        //     match  elements{
+
+        //     }
+        //     elements.last().u;
+        //     for element in elements.reverse() {
+        //         element.accept(self); // Generate bytecode to evaluate the element
+        //         self.bytecode.push(Bytecode::Alloc); // Allocate memory for the element
+        //         self.bytecode.push(Bytecode::Store);
+        //         self.bytecode.push(Bytecode::Dup);
     }
 }
 
 impl<'a> Visitor for BytecodeGenerator<'a> {
     fn visit_algorithm(&mut self, algorithm: &Algorithm) {
-        if let Algorithm::Body(lines) = algorithm {
-            self.current_position = 0;
-            while self.current_position < lines.len() {
-                lines[self.current_position].accept(self);
-                self.current_position += 1;
+        match algorithm {
+            Algorithm::Body(lines) => {
+                self.current_position = 0;
+                while self.current_position < lines.len() {
+                    lines[self.current_position].accept(self);
+                    self.current_position += 1;
+                }
             }
         }
     }
 
     fn visit_file_line(&mut self, file_line: &FileLine) {
-        if let FileLine::Line { labels, statements } = file_line {
-            for label in labels {
-                self.labels.insert(label.clone(), self.bytecode.len());
-                self.bytecode.push(Bytecode::Label(label.clone()));
+        match file_line {
+            FileLine::Line { labels, statements } => {
+                for label in labels {
+                    self.labels.insert(label.clone(), self.bytecode.len());
+                    self.bytecode.push(Bytecode::Label(label.clone()));
+                }
+                statements.accept(self);
             }
-            statements.accept(self);
         }
     }
 
@@ -121,9 +141,9 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
 
                 // Link the iterator variable to an address
                 if let ExpressionKind::Var { name } = &iterator.node {
-                    self.bytecode.push(Bytecode::SetVar(name.clone()));
-                    self.bytecode.push(Bytecode::GetVar(name.clone()));
-                    self.bytecode.push(Bytecode::Alloc);
+                    self.bytecode.push(Bytecode::StoreVar(name.clone()));
+                    self.bytecode.push(Bytecode::LoadVar(name.clone()));
+                    self.bytecode.push(Bytecode::Store);
                     // Label to mark the start of the loop
                     let start_label = format!("loop_start_{}", self.bytecode.len());
                     self.labels.insert(start_label.clone(), self.bytecode.len());
@@ -154,11 +174,11 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
 
                     // Increment the loop variable
                     step.accept(self);
-                    self.bytecode.push(Bytecode::GetVar(name.clone()));
+                    self.bytecode.push(Bytecode::LoadVar(name.clone()));
                     self.bytecode.push(Bytecode::Deref);
                     self.bytecode.push(Bytecode::Add);
-                    self.bytecode.push(Bytecode::GetVar(name.clone()));
-                    self.bytecode.push(Bytecode::Alloc);
+                    self.bytecode.push(Bytecode::LoadVar(name.clone()));
+                    self.bytecode.push(Bytecode::Store);
                     // Jump back to the start of the loop
                     self.bytecode
                         .push(Bytecode::Jump(self.labels[&start_label]));
@@ -172,13 +192,6 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                         Some(l) => self.jumps.push((jump_if_false_pos, l.clone())),
                         None => self.jumps.push((jump_if_false_pos, end_label.clone())),
                     }
-
-                    // // Handle label_to (optional jump after loop finishes)
-                    // if let Some(label_to) = label_to {
-                    //     let jump_pos = self.bytecode.len();
-                    //     self.bytecode.push(Bytecode::Jump(0)); // Placeholder
-                    //     self.jumps.push((jump_pos, label_to.clone()));
-                    // }
 
                     // Link the label_until to the end of the loop
                     self.labels.insert(label_until.clone(), self.bytecode.len());
@@ -195,8 +208,16 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 self.bytecode.push(Bytecode::Jump(0)); // Placeholder
                 self.jumps.push((jump_pos, label.clone()));
             }
-            OneLineStatementKind::SubProgram { sp_name, args, label_to } => todo!(),
-            OneLineStatementKind::Predicate { condition, if_true, if_false } =>{
+            OneLineStatementKind::SubProgram {
+                sp_name,
+                args,
+                label_to,
+            } => todo!(),
+            OneLineStatementKind::Predicate {
+                condition,
+                if_true,
+                if_false,
+            } => {
                 // Evaluate the condition
                 condition.accept(self);
 
@@ -216,12 +237,12 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 self.bytecode[jump_if_false_pos] = Bytecode::JumpIfFalse(false_branch_pos);
 
                 // Generate bytecode for the false branch if it exists
-                 if_false.accept(self);
+                if_false.accept(self);
 
                 // Set the placeholder for the end of the false branch
                 let end_pos = self.bytecode.len();
                 self.bytecode[jump_to_end_pos] = Bytecode::Jump(end_pos);
-            },
+            }
             OneLineStatementKind::Exit => self.bytecode.push(Bytecode::Halt),
             OneLineStatementKind::Return => self.bytecode.push(Bytecode::Return),
             // Handling other OneLineStatementKind cases...
@@ -236,8 +257,33 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
         match kind {
             SimpleStatementKind::Assign { lhs, rhs } => {
                 rhs.accept(self);
-                if let ExpressionKind::Var { name } = &lhs.node {
-                    self.bytecode.push(Bytecode::SetVar(name.clone()));
+                match &lhs.node {
+                    ExpressionKind::Null => todo!(),
+                    ExpressionKind::Float { value } => todo!(),
+                    ExpressionKind::Bool { value } => todo!(),
+                    ExpressionKind::Int { value } => todo!(),
+                    ExpressionKind::String { value } => todo!(),
+                    ExpressionKind::Var { name } => {
+                        self.bytecode.push(Bytecode::BindAddr(name.to_string()));
+                    }
+                    ExpressionKind::List { elements } => todo!(),
+                    ExpressionKind::Call { .. } => todo!(),
+                    ExpressionKind::UnaryOp { op, expr } => match op {
+                        UnaryOp::Dereference => {
+                            expr.accept(self);
+                            self.bytecode.push(Bytecode::Store);
+                        }
+                        UnaryOp::MultipleDereference(n) => {
+                            expr.accept(self);
+                            n.accept(self);
+                            self.bytecode.push(Bytecode::Constant(Value::new_int(1)));
+                            self.bytecode.push(Bytecode::Sub);
+                            self.bytecode.push(Bytecode::MulDeref);
+                            self.bytecode.push(Bytecode::Store);
+                        }
+                        UnaryOp::Not => todo!(),
+                    },
+                    ExpressionKind::BinaryOp { .. } => todo!(),
                 }
             }
             SimpleStatementKind::Expression { expression } => expression.accept(self),
@@ -249,9 +295,13 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
             SimpleStatementKind::Send { lhs, rhs } => {
                 rhs.accept(self);
                 lhs.accept(self);
-                self.bytecode.push(Bytecode::Alloc);
+                self.bytecode.push(Bytecode::Store);
             }
             SimpleStatementKind::Exchange { lhs, rhs } => todo!(),
+            SimpleStatementKind::Del { rhs } => {
+                rhs.accept(self);
+                self.bytecode.push(Bytecode::FreeAddr);
+            }
         }
     }
 
@@ -264,7 +314,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
             ExpressionKind::Int { value } => self
                 .bytecode
                 .push(Bytecode::Constant(Value::new_int(*value))),
-            ExpressionKind::Var { name } => self.bytecode.push(Bytecode::GetVar(name.clone())),
+            ExpressionKind::Var { name } => self.bytecode.push(Bytecode::LoadVar(name.clone())),
             ExpressionKind::BinaryOp { op, lhs, rhs } => {
                 lhs.accept(self);
                 rhs.accept(self);
@@ -292,13 +342,13 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
             ExpressionKind::String { value } => self
                 .bytecode
                 .push(Bytecode::Constant(Value::new_string(value.to_string()))),
-            ExpressionKind::List { elements } => todo!(),
+            ExpressionKind::List { elements } => self.generate_list(elements),
             ExpressionKind::Call { function, args } => {
                 for arg in args {
                     arg.accept(self);
-                    self.bytecode
-                        .push(Bytecode::Call(function.to_string(), args.len()))
                 }
+                self.bytecode
+                    .push(Bytecode::Call(function.to_string(), args.len()))
             }
             ExpressionKind::UnaryOp { op, expr } => {
                 expr.accept(self);

@@ -2,8 +2,8 @@ use codegen::gen::BytecodeGenerator;
 use common::util::read_file;
 use parser::ast::visitor::Visitor;
 use parser::ast::*;
-use vm::builtins::builtin_print;
-use vm::VM;
+use vm::vm::builtins::builtin_print;
+use vm::vm::VM;
 
 fn main() {
     let source_text =

@@ -38,7 +38,7 @@ fn test_visit_mulderef_op() {
     assert_eq!(
         bytecode,
         vec![
-            Bytecode::GetVar("list1".to_string()),
+            Bytecode::LoadVar("list1".to_string()),
             Bytecode::Constant(Value::Int(4)),
             Bytecode::MulDeref
         ]
