@@ -1,5 +1,13 @@
-'x = 3; 'y = 5; 'z = 'y + 'x; 
-Print{"x = ", 'x, " y = ", 'y, " z = ", 'z}
-del x; 
-Print{"x = ", 'x, " y = ", 'y, " z = ", 'z}
+'k = "aaaaaa"
+'d = "dddddd"
+SP print {k, d}
 
+
+!
+
+# get element value by its index 
+print ... null => to_print; null => kek
+    
+    Print {"k/print: ", 'to_print}
+     Print {"d/kek: ", 'kek}
+return

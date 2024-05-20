@@ -34,7 +34,8 @@ pub enum Bytecode {
     StoreAddr,
     BindAddr(String),
     FreeAddr,
-    Call(String, usize), // function name and number of arguments
-    CallProc(String),
-    CallFn(String),
+    CallBuiltin(String, usize),   // function name and number of arguments
+    CallSubProgram(usize, usize), // label, arity, label_to
+    PushScope,                    // Push a new scope to the stack
+    PopScope,                     //
 }

@@ -1,20 +1,25 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, f32::NAN};
+use log::{debug, info, trace, warn};
 
 use codegen::bytecode::Bytecode;
 use value::Value;
 
+use self::scope::Scope;
+
 pub mod builtins;
+mod scope;
 mod tests;
 
 pub struct VM {
     bytecode: Vec<Bytecode>,
     pc: usize,
     stack: Vec<Value>,
-    variable_addresses: HashMap<String, i64>,
+    scopes: Vec<Scope>,
     values_by_address: HashMap<i64, Value>,
     builtins: HashMap<String, BuiltinFunction>,
-    next_address: i64,   // To keep track of the next free address
-    free_list: Vec<i64>, // List of freed addresses
+    next_address: i64,      // To keep track of the next free address
+    free_list: Vec<i64>,    // List of freed addresses
+    call_stack: Vec<usize>, // Stack to store return addresses
 }
 
 type BuiltinFunction = fn(&mut VM, Vec<Value>) -> Value;
@@ -25,11 +30,12 @@ impl VM {
             bytecode,
             pc: 0,
             stack: Vec::new(),
-            variable_addresses: HashMap::new(),
+            scopes: vec![Scope::new()], // Initialize with a global scope
             values_by_address: HashMap::new(),
             builtins: HashMap::new(),
-            next_address: 0,       // Start with address 0
-            free_list: Vec::new(), // Initialize the free list
+            next_address: 0,        // Start with address 0
+            free_list: Vec::new(),  // Initialize the free list
+            call_stack: Vec::new(), // Initialize the call stack
         }
     }
 
@@ -41,9 +47,11 @@ impl VM {
         while self.pc < self.bytecode.len() {
             let instruction = self.bytecode[self.pc].clone();
             self.pc += 1;
-            println!("---{:?}---", self.pc);
-            println!("{:?}", instruction);
 
+            // ---------------LOGGING----------------------------------------------------
+            trace!("--- PC: {:?} ---", self.pc);
+            trace!("Instruction: {:?}", instruction);
+            // --------------------------------------------------------
             match instruction {
                 Bytecode::Constant(value) => self.stack.push(value),
                 Bytecode::LoadVar(name) => self.get_var(&name),
@@ -64,8 +72,11 @@ impl VM {
                 Bytecode::Jump(addr) => self.pc = addr,
                 Bytecode::JumpIfFalse(addr) => self.jump_if_false(addr),
                 Bytecode::Label(_) => {}
-                Bytecode::Call(name, argc) => self.call_builtin(&name, argc),
-                Bytecode::Return => return,
+                Bytecode::CallBuiltin(name, argc) => self.call_builtin(&name, argc),
+                Bytecode::CallSubProgram(label, argc) => {
+                    self.call_subprogram(label, argc);
+                }
+                Bytecode::Return => self.handle_return(),
                 Bytecode::Halt => break,
                 Bytecode::Pop => {
                     self.stack.pop();
@@ -73,16 +84,31 @@ impl VM {
                 Bytecode::Deref => self.deref(),
                 Bytecode::MulDeref => self.mul_deref(),
                 Bytecode::Store => self.store(),
-                Bytecode::CallProc(_) => unimplemented!(),
-                Bytecode::CallFn(_) => unimplemented!(),
                 Bytecode::Alloc => self.alloc(),
                 Bytecode::Dup => self.dup(),
                 Bytecode::StoreAddr => self.store_addr(),
                 Bytecode::BindAddr(name) => self.bind_addr(name),
+                Bytecode::PushScope => self.push_scope(),
+                Bytecode::PopScope => self.pop_scope(),
                 Bytecode::FreeAddr => self.free_addr(),
             }
-            println!("stack: {:?}", self.stack);
+            // ---------------LOGGING----------------------------------------------------
+            trace!("Stack: {:?}", self.stack);
+            trace!("Values by address: {:?}", self.values_by_address);
+            trace!("Current scope: {:?}", self.current_scope());
         }
+    }
+
+    fn current_scope(&mut self) -> &mut Scope {
+        self.scopes.last_mut().expect("No scope available")
+    }
+
+    fn push_scope(&mut self) {
+        self.scopes.push(Scope::new());
+    }
+
+    fn pop_scope(&mut self) {
+        self.scopes.pop().expect("No scope to pop");
     }
 
     fn store_addr(&mut self) {
@@ -95,28 +121,24 @@ impl VM {
     fn bind_addr(&mut self, name: String) {
         let address = self.stack.pop().unwrap();
         if let Value::Int(addr) = address {
-            self.variable_addresses.insert(name, addr);
+            self.current_scope().set_var(&name, addr);
         } else {
             panic!("BindAddr operation requires an integer address on the stack");
         }
     }
 
     fn get_var(&mut self, name: &str) {
-        let address = self
-            .variable_addresses
-            .get(name)
-            .cloned()
-            .unwrap_or_else(|| {
-                let address = self.allocate_address();
-                self.variable_addresses.insert(name.to_string(), address);
-                address
-            });
+        let address = self.current_scope().get_var(name).unwrap_or_else(|| {
+            let address = self.allocate_address();
+            self.current_scope().set_var(name, address);
+            address
+        });
         self.stack.push(Value::Int(address));
     }
 
     fn set_var(&mut self, name: &str) {
         let address = self.allocate_address();
-        self.variable_addresses.insert(name.to_string(), address);
+        self.current_scope().set_var(name, address);
     }
 
     fn alloc(&mut self) {
@@ -147,6 +169,7 @@ impl VM {
 
     fn deref(&mut self) {
         let value = self.stack.pop().unwrap();
+        // println!("value: {:?}", self.values_by_address);
         match value {
             Value::Int(address) => {
                 if let Some(stored_value) = self.values_by_address.get(&address) {
@@ -167,7 +190,12 @@ impl VM {
         } else {
             let mut address_p = address.extract_int().unwrap();
             for _ in 0..n {
-                address_p = self.values_by_address[&address_p].extract_int().unwrap();
+                address_p = self
+                    .values_by_address
+                    .get(&address_p)
+                    .expect("Invalid address during dereference")
+                    .extract_int()
+                    .unwrap();
             }
             self.stack.push(self.values_by_address[&address_p].clone());
         }
@@ -201,6 +229,25 @@ impl VM {
         } else {
             panic!("Undefined function: {}", name);
         }
+    }
+
+    fn call_subprogram(&mut self, label: usize, argc: usize) {
+        self.call_stack.push(self.pc + 1);
+        self.pc = label;
+    }
+
+    fn bind_args(&mut self, args: Vec<String>) {
+        for arg in args {
+            self.bind_addr(arg);
+        }
+    }
+
+    fn handle_return(&mut self) {
+        self.pop_scope();
+        self.pc = self
+            .call_stack
+            .pop()
+            .expect("Call stack underflow on return");
     }
 
     fn free_addr(&mut self) {

@@ -42,6 +42,9 @@ impl<'a> BytecodeGenerator<'a> {
                 self.bytecode[*pos] = match self.bytecode[*pos] {
                     Bytecode::Jump(_) => Bytecode::Jump(address),
                     Bytecode::JumpIfFalse(_) => Bytecode::JumpIfFalse(address),
+                    Bytecode::CallSubProgram(offset, arity) => {
+                        Bytecode::CallSubProgram(offset + address, arity)
+                    }
                     _ => todo!(),
                 }
             } else {
@@ -71,6 +74,37 @@ impl<'a> BytecodeGenerator<'a> {
                 }
             }
         }
+    }
+
+    fn bind_names(&mut self, name: &str, arity: usize) -> Vec<String> {
+        let mut local_names: Vec<String> = vec![];
+        match self.ast {
+            Algorithm::Body(lines) => {
+                for FileLine::Line { labels, statements } in lines {
+                    if labels.contains(&name.to_string()) {
+                        match statements {
+                            Statements::OneLineStatement(_) => todo!(),
+                            Statements::SimpleStatements(stmts) => {
+                                for stmt in stmts.into_iter() {
+                                    match &stmt.node {
+                                        SimpleStatementKind::Send { lhs, rhs } => match &lhs.node {
+                                            ExpressionKind::Var { name } => {
+                                                local_names.push(name.to_string())
+                                            }
+                                            _ => todo!(),
+                                        },
+                                        _ => todo!(),
+                                    }
+                                }
+                                // self.bytecode.push(Bytecode::BindArgs(local_names.clone()));
+                                return local_names;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return local_names;
     }
 
     fn generate_list(&mut self, elements: &[Box<Expression>]) {
@@ -212,7 +246,38 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                 sp_name,
                 args,
                 label_to,
-            } => todo!(),
+            } => {
+                // Generate bytecode for arguments
+
+                for arg in args {
+                    arg.accept(self);
+                }
+
+                self.bytecode.push(Bytecode::PushScope);
+
+                let local_variables = self.bind_names(&sp_name.identifier, args.len());
+                for local_var in local_variables.iter().rev(){
+                    self.bytecode
+                        .push(Bytecode::BindAddr(local_var.to_string()));
+                }
+
+                // Call the subprogram
+                let jump_pos = self.bytecode.len();
+                self.jumps.push((jump_pos, sp_name.identifier.clone()));
+
+                self.bytecode
+                    .push(Bytecode::CallSubProgram(args.len() * 3 + 1, args.len()));
+
+                self.bytecode.push(Bytecode::PopScope);
+
+                let call_declaration_label =
+                    format!("call_declaration_label_{}", self.bytecode.len());
+                self.labels
+                    .insert(call_declaration_label.clone(), self.bytecode.len());
+
+                self.bytecode
+                    .push(Bytecode::Label(call_declaration_label.clone()));
+            }
             OneLineStatementKind::Predicate {
                 condition,
                 if_true,
@@ -348,7 +413,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                     arg.accept(self);
                 }
                 self.bytecode
-                    .push(Bytecode::Call(function.to_string(), args.len()))
+                    .push(Bytecode::CallBuiltin(function.to_string(), args.len()))
             }
             ExpressionKind::UnaryOp { op, expr } => {
                 expr.accept(self);

@@ -44,7 +44,7 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
         Bytecode::NotEqual => format!("{:<5} {}\n", offset, "COMPARE_OP NE"),
         Bytecode::Greater => format!("{:<5} {}\n", offset, "COMPARE_OP GT"),
         Bytecode::Less => format!("{:<5} {}\n", offset, "COMPARE_OP LT"),
-        Bytecode::Call(name, arity) => format!(
+        Bytecode::CallBuiltin(name, arity) => format!(
             "{:<5} {:<23} {} ({})\n",
             offset, "CALL_FUNCTION", name, arity
         ),
@@ -60,14 +60,19 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
         Bytecode::MulDeref => format!("{:<5} {}\n", offset, "MULTIPLE_DEREFERENCE"),
         Bytecode::Store => format!("{:<5} {}\n", offset, "STORE"),
         Bytecode::Alloc => format!("{:<5} {}\n", offset, "ALLOC"),
-        Bytecode::CallProc(_) => todo!(),
-        Bytecode::CallFn(_) => todo!(),
-        Bytecode::Dup => format!("{:<5} {}\n", offset, "ALLOC"),
+        Bytecode::Dup => format!("{:<5} {}\n", offset, "DUP"),
         Bytecode::StoreAddr => format!("{:<5} {}\n", offset, "STORE_ADDR"),
         Bytecode::BindAddr(name) => format!("{:<5} {:<23} {}\n", offset, "BIND_ADDR", name),
         Bytecode::FreeAddr => format!("{:<5} {}\n", offset, "FREE_ADDR"),
-        // Bytecode::CallProc(name) => format!("{:<5} {:<23} {}\n", offset, "CALL_PROCEDURE", name),
-        // Bytecode::CallFn(name) => format!("{:<5} {:<23} {}\n", offset, "CALL_FUNCTION", name),
+        Bytecode::CallSubProgram(label, arity) => format!(
+            "{:<5} {:<23} {} ({})\n",
+            offset,
+            "CALL_SUBPROGRAM",
+            label,
+            arity
+        ),
+        Bytecode::PushScope => format!("{:<5} {}\n", offset, "PUSH_SCOPE"),
+        Bytecode::PopScope => format!("{:<5} {}\n", offset, "POP_SCOPE"),
     }
 }
 
@@ -127,7 +132,24 @@ fn parse_bytecode_instructions(contents: &str) -> Result<Vec<Bytecode>, io::Erro
                     .trim_matches(')')
                     .parse()
                     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-                Bytecode::Call(name, arity)
+                Bytecode::CallBuiltin(name, arity)
+            }
+            "CALL_SUBPROGRAM" => {
+                if parts.len() < 4 {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid CALL_SUBPROGRAM format",
+                    ));
+                }
+                let label = parts[2]
+                    .parse()
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+                let arity = parts[3]
+                    .trim_matches('(')
+                    .trim_matches(')')
+                    .parse()
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+                Bytecode::CallSubProgram(label, arity)
             }
             "RETURN_VALUE" => Bytecode::Return,
             "JUMP" => {
@@ -154,8 +176,9 @@ fn parse_bytecode_instructions(contents: &str) -> Result<Vec<Bytecode>, io::Erro
             "DUP" => Bytecode::Dup,
             "FREE_ADDR" => Bytecode::FreeAddr,
             "STORE_ADDR" => Bytecode::StoreAddr,
-            // "CALL_PROCEDURE" => Bytecode::CallProc(parts[2].to_string()),
-            // "CALL_FUNCTION" => Bytecode::CallFn(parts[2].to_string()),
+            "PUSH_SCOPE" => Bytecode::PushScope,
+            "POP_SCOPE" => Bytecode::PopScope,
+
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -189,7 +212,18 @@ mod tests {
             Bytecode::Deref,
             Bytecode::MulDeref,
             Bytecode::Store,
-            Bytecode::Call("procedure_name".to_string(), 4),
+            Bytecode::CallBuiltin("procedure_name".to_string(), 4),
+            Bytecode::CallSubProgram(0, 2),
+            Bytecode::Label("start".to_string()),
+            Bytecode::Jump(10),
+            Bytecode::JumpIfFalse(15),
+            Bytecode::Alloc,
+            Bytecode::Dup,
+            Bytecode::StoreAddr,
+            Bytecode::BindAddr("a".to_string()),
+            Bytecode::FreeAddr,
+            Bytecode::PushScope,
+            Bytecode::PopScope,
         ];
 
         let file_path = "test/bytecode/test_bytecode.txt";

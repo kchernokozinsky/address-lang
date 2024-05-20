@@ -6,6 +6,7 @@ use vm::vm::builtins::builtin_print;
 use vm::vm::VM;
 
 fn main() {
+    env_logger::init();
     let source_text =
         read_file("/Users/chernokozinskiy/Documents/address-lang/codegen/test/loop.adl");
     let algo: Algorithm = parser::parse(&source_text).unwrap();
@@ -19,3 +20,5 @@ fn main() {
     vm.register_builtin("Print", builtin_print);
     vm.run();
 }
+
+// RUST_LOG=trace cargo run

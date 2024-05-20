@@ -1,0 +1,25 @@
+0     LOAD_CONST              42
+1     STORE_NAME              x
+2     LOAD_NAME               x
+3     BINARY_ADD
+4     RETURN_VALUE
+5     HALT
+6     UNARY_NOT
+7     UNARY_NEGATIVE
+8     POP_TOP
+9     DEREFERENCE
+10    MULTIPLE_DEREFERENCE
+11    STORE
+12    CALL_FUNCTION           procedure_name (4)
+13    CALL_SUBPROGRAM         0 (2)
+14    LABEL                   start
+15    JUMP                    10
+16    JUMP_IF_FALSE           15
+17    ALLOC
+18    DUP
+19    STORE_ADDR
+20    BIND_ADDR               a
+21    FREE_ADDR
+22    PUSH_SCOPE
+23    POP_SCOPE
+24    BIND_ARGS               ["arg1", "arg2"]
