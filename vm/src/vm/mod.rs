@@ -99,8 +99,8 @@ impl VM {
                 Bytecode::Mod => self.binary_op(|a, b| a % b),
                 Bytecode::And => self.binary_op_bool(|a, b| a && b),
                 Bytecode::Or => self.binary_op_bool(|a, b| a || b),
-                Bytecode::Equal => self.binary_op_cmp(|a, b| a == b),
-                Bytecode::NotEqual => self.binary_op_cmp(|a, b| a != b),
+                Bytecode::Equal => self.binary_op_cmp(Self::equality_op),
+                Bytecode::NotEqual => self.binary_op_cmp(Self::inequality_op),
                 Bytecode::Greater => self.binary_op_cmp(|a, b| a > b),
                 Bytecode::Less => self.binary_op_cmp(|a, b| a < b),
                 Bytecode::Not => self.unary_op_bool(|a| !a),
@@ -215,7 +215,6 @@ impl VM {
 
     fn deref(&mut self) {
         let value = self.stack.pop().unwrap();
-        // println!("value: {:?}", self.values_by_address);
         match value {
             Value::Int(address) => {
                 if let Some(stored_value) = self.values_by_address.get(&address) {
@@ -235,7 +234,7 @@ impl VM {
             self.stack.push(address.clone());
         } else {
             let mut address_p = address.extract_int().unwrap();
-            for _ in 0..n {
+            for _ in 1..n {
                 address_p = self
                     .values_by_address
                     .get(&address_p)
@@ -322,7 +321,7 @@ impl VM {
 
     fn binary_op_cmp<F>(&mut self, op: F)
     where
-        F: Fn(i64, i64) -> bool,
+        F: Fn(&Value, &Value) -> bool,
     {
         let rhs = self.stack.pop().unwrap();
         let lhs = self.stack.pop().unwrap();
@@ -370,12 +369,24 @@ impl VM {
 
     fn perform_comparison_op<F>(&self, lhs: Value, rhs: Value, op: F) -> Value
     where
-        F: Fn(i64, i64) -> bool,
+        F: Fn(&Value, &Value) -> bool,
     {
+        Value::Bool(op(&lhs, &rhs))
+    }
+
+    fn equality_op(lhs: &Value, rhs: &Value) -> bool {
         match (lhs, rhs) {
-            (Value::Int(a), Value::Int(b)) => Value::Bool(op(a, b)),
-            _ => Value::new_bool(false),
+            (Value::Int(a), Value::Int(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => a == b,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Null, Value::Null) => true,
+            _ => false,
         }
+    }
+
+    fn inequality_op(lhs: &Value, rhs: &Value) -> bool {
+        !Self::equality_op(lhs, rhs)
     }
 
     fn perform_unary_op<F>(&self, value: Value, op: F) -> Value
