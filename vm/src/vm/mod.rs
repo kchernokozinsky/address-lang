@@ -43,6 +43,42 @@ impl VM {
         self.builtins.insert(name.to_string(), func);
     }
 
+    fn alloc_many(&mut self, count: usize) {
+        let addresses = self.allocate_consecutive_addresses(count);
+        for address in addresses.iter().copied() {
+            self.stack.push(Value::new_int(address));
+        }
+    }
+
+    fn allocate_consecutive_addresses(&mut self, count: usize) -> Vec<i64> {
+        // Attempt to find a block of free addresses
+        for start in 0..self.next_address {
+            if self.is_block_free(start, count) {
+                let addresses = (start..start + count as i64).collect::<Vec<_>>();
+                for &address in &addresses {
+                    self.free_list.retain(|&x| x != address);
+                }
+                return addresses;
+            }
+        }
+
+        // If no block is found, allocate new addresses
+        let start_address = self.next_address;
+        self.next_address += count as i64;
+        (start_address..start_address + count as i64).collect()
+    }
+
+    fn is_block_free(&self, start: i64, count: usize) -> bool {
+        for i in 0..count {
+            if self.values_by_address.contains_key(&(start + i as i64))
+                || self.free_list.contains(&(start + i as i64))
+            {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn run(&mut self) {
         while self.pc < self.bytecode.len() {
             let instruction = self.bytecode[self.pc].clone();
@@ -85,18 +121,28 @@ impl VM {
                 Bytecode::MulDeref => self.mul_deref(),
                 Bytecode::Store => self.store(),
                 Bytecode::Alloc => self.alloc(),
+                Bytecode::AllocMany(count) => self.alloc_many(count),
                 Bytecode::Dup => self.dup(),
                 Bytecode::StoreAddr => self.store_addr(),
                 Bytecode::BindAddr(name) => self.bind_addr(name),
                 Bytecode::PushScope => self.push_scope(),
                 Bytecode::PopScope => self.pop_scope(),
                 Bytecode::FreeAddr => self.free_addr(),
+                Bytecode::Swap => self.swap(),
             }
             // ---------------LOGGING----------------------------------------------------
             trace!("Stack: {:?}", self.stack);
             trace!("Values by address: {:?}", self.values_by_address);
             trace!("Current scope: {:?}", self.current_scope());
         }
+    }
+
+    fn swap(&mut self) {
+        if self.stack.len() < 2 {
+            panic!("Not enough elements on the stack to swap");
+        }
+        let len = self.stack.len();
+        self.stack.swap(len - 1, len - 2);
     }
 
     fn current_scope(&mut self) -> &mut Scope {
@@ -183,8 +229,8 @@ impl VM {
     }
 
     fn mul_deref(&mut self) {
+        let n: i64 = self.stack.pop().unwrap().extract_int().unwrap();
         let address = self.stack.pop().unwrap();
-        let n = self.stack.pop().unwrap().extract_int().unwrap();
         if n == 0 {
             self.stack.push(address.clone());
         } else {
@@ -234,12 +280,6 @@ impl VM {
     fn call_subprogram(&mut self, label: usize, argc: usize) {
         self.call_stack.push(self.pc + 1);
         self.pc = label;
-    }
-
-    fn bind_args(&mut self, args: Vec<String>) {
-        for arg in args {
-            self.bind_addr(arg);
-        }
     }
 
     fn handle_return(&mut self) {
@@ -334,7 +374,7 @@ impl VM {
     {
         match (lhs, rhs) {
             (Value::Int(a), Value::Int(b)) => Value::Bool(op(a, b)),
-            _ => panic!("Invalid types for comparison operation"),
+            _ => Value::new_bool(false),
         }
     }
 

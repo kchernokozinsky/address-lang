@@ -8,7 +8,7 @@ use vm::vm::VM;
 fn main() {
     env_logger::init();
     let source_text =
-        read_file("/Users/chernokozinskiy/Documents/address-lang/codegen/test/loop.adl");
+        read_file("/Users/chernokozinskiy/Documents/address-lang/examples/list/concat.adl");
     let algo: Algorithm = parser::parse(&source_text).unwrap();
 
     let mut generator = BytecodeGenerator::new(&algo);

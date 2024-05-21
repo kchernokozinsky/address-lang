@@ -108,15 +108,23 @@ impl<'a> BytecodeGenerator<'a> {
     }
 
     fn generate_list(&mut self, elements: &[Box<Expression>]) {
-        //     match  elements{
+        // allocate last element
+        // self.bytecode.push(Bytecode::Store);
+        self.bytecode.push(Bytecode::Constant(Value::Null));
+        self.bytecode.push(Bytecode::StoreAddr); // stack: address to last element next address
+        elements.last().unwrap().accept(self);
+        self.bytecode.push(Bytecode::Alloc);
+        self.bytecode.push(Bytecode::Store);
 
-        //     }
-        //     elements.last().u;
-        //     for element in elements.reverse() {
-        //         element.accept(self); // Generate bytecode to evaluate the element
-        //         self.bytecode.push(Bytecode::Alloc); // Allocate memory for the element
-        //         self.bytecode.push(Bytecode::Store);
-        //         self.bytecode.push(Bytecode::Dup);
+        let tail = &elements[0..elements.len() - 1];
+        for e in tail.iter().rev() {
+            self.bytecode.push(Bytecode::StoreAddr);
+            e.accept(self);
+            self.bytecode.push(Bytecode::Alloc); // stack:  address to last element value, address to previos element value
+                                                 // self.bytecode.push(Bytecode::Swap);           // stack: address to previos element value, stack: address to last element value
+            self.bytecode.push(Bytecode::Store); // stack: address to previos element value
+                                                 //  stack: address to last element value
+        }
     }
 }
 

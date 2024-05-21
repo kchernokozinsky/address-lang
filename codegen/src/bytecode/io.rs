@@ -70,6 +70,8 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
         ),
         Bytecode::PushScope => format!("{:<5} {}\n", offset, "PUSH_SCOPE"),
         Bytecode::PopScope => format!("{:<5} {}\n", offset, "POP_SCOPE"),
+        Bytecode::AllocMany(n) => format!("{:<5} {:<23} {}\n", offset, "ALLOC_MANY", n),
+        Bytecode::Swap => format!("{:<5} {}\n", offset, "SWAP"),
     }
 }
 

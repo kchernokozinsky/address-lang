@@ -64,3 +64,37 @@ fn test_deref_unallocated_address() {
 
     assert_eq!(vm.stack.pop().unwrap(), Value::Null); // Dereferencing unallocated address should return null
 }
+
+#[test]
+fn test_alloc_many() {
+    let bytecode = vec![
+        Bytecode::AllocMany(3), // Allocate 3 consecutive addresses
+        Bytecode::Halt,
+    ];
+
+    let mut vm = VM::new(bytecode);
+    vm.run();
+
+    assert_eq!(vm.stack.len(), 3);
+    assert_eq!(vm.stack[0], Value::new_int(0));
+    assert_eq!(vm.stack[1], Value::new_int(1));
+    assert_eq!(vm.stack[2], Value::new_int(2));
+}
+
+#[test]
+fn test_alloc_many_with_existing_addresses() {
+    let bytecode = vec![
+        Bytecode::Alloc,        // Allocate 1 address
+        Bytecode::FreeAddr,     // Free the address
+        Bytecode::AllocMany(3), // Allocate 3 consecutive addresses
+        Bytecode::Halt,
+    ];
+
+    let mut vm = VM::new(bytecode);
+    vm.run();
+
+    assert_eq!(vm.stack.len(), 3);
+    assert_eq!(vm.stack[0], Value::new_int(1));
+    assert_eq!(vm.stack[1], Value::new_int(2));
+    assert_eq!(vm.stack[2], Value::new_int(3));
+}

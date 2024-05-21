@@ -30,12 +30,14 @@ pub enum Bytecode {
     LoadVar(String),
     Store,
     Alloc,
+    AllocMany(usize),
     Dup,
-    StoreAddr,
+    StoreAddr, // store to the address and push to the stack
     BindAddr(String),
     FreeAddr,
     CallBuiltin(String, usize),   // function name and number of arguments
     CallSubProgram(usize, usize), // label, arity, label_to
     PushScope,                    // Push a new scope to the stack
-    PopScope,                     //
+    PopScope,
+    Swap, //
 }
