@@ -1,24 +1,19 @@
-use codegen::gen::BytecodeGenerator;
-use common::util::read_file;
-use parser::ast::visitor::Visitor;
-use parser::ast::*;
-use vm::vm::builtins::builtin_print;
-use vm::vm::VM;
+use codegen::bytecode::Bytecode;
+use value::Value;
+use vm::execute_bytecode;
 
 fn main() {
     env_logger::init();
-    let source_text =
-        read_file("/Users/chernokozinskiy/Documents/address-lang/examples/list/concat.adl");
-    let algo: Algorithm = parser::parse(&source_text).unwrap();
-
-    let mut generator = BytecodeGenerator::new(&algo);
-    generator.visit_algorithm(&algo);
-
-    let bytecode = generator.get_bytecode();
-    println!("{:?}", bytecode);
-    let mut vm = VM::new(bytecode);
-    vm.register_builtin("Print", builtin_print);
-    vm.run();
+    let bytecode = vec![
+        Bytecode::Constant(Value::new_int(5)),
+        Bytecode::BindAddr("x".to_string()),
+        Bytecode::LoadVar("x".to_string()),
+        Bytecode::Constant(Value::new_int(3)),
+        Bytecode::Add,
+        Bytecode::BindAddr("y".to_string()),
+        Bytecode::LoadVar("y".to_string()),
+        Bytecode::Halt,
+    ];
+    execute_bytecode(bytecode);
 }
-
 // RUST_LOG=trace cargo run

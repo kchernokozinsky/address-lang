@@ -1,6 +1,7 @@
+use crate::VM;
 use value::Value;
 
-use super::VM;
+pub type BuiltinFunction = fn(&mut VM, Vec<Value>) -> Value;
 
 pub fn builtin_print(vm: &mut VM, args: Vec<Value>) -> Value {
     for arg in args {
