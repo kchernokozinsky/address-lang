@@ -1,38 +1,202 @@
-0     LOAD_CONST              'aaaaaa'
-1     LOAD_NAME               k
-2     STORE
-3     LOAD_NAME               k
-4     LOAD_NAME               d
-5     PUSH_SCOPE
-6     BIND_ADDR               to_print
-7     BIND_ADDR               kek
-8     CALL_SUBPROGRAM         27 (2)
-9     POP_SCOPE
-10    LABEL                   call_declaration_label_10
-11    LOAD_CONST              'after: '
-12    LOAD_NAME               k
-13    DEREFERENCE
-14    CALL_FUNCTION           Print (2)
-15    LOAD_CONST              'after: '
-16    LOAD_NAME               d
-17    DEREFERENCE
-18    CALL_FUNCTION           Print (2)
-19    HALT
-20    LABEL                   print
-21    LOAD_CONST              Null
-22    LOAD_NAME               to_print
-23    STORE
-24    LOAD_CONST              Null
-25    LOAD_NAME               kek
-26    STORE
-27    LOAD_CONST              'inside: '
-28    LOAD_NAME               to_print
-29    DEREFERENCE
-30    CALL_FUNCTION           Print (2)
-31    LOAD_CONST              'ddddd'
-32    LOAD_NAME               to_print
-33    STORE
-34    LOAD_CONST              'pprprp'
-35    LOAD_NAME               kek
-36    STORE
-37    RETURN_VALUE
+0     LOAD_CONST              Null
+1     STORE_ADDR
+2     LOAD_CONST              'g'
+3     ALLOC
+4     STORE
+5     STORE_ADDR
+6     LOAD_CONST              'f'
+7     ALLOC
+8     STORE
+9     STORE_ADDR
+10    LOAD_CONST              'e'
+11    ALLOC
+12    STORE
+13    STORE_ADDR
+14    LOAD_CONST              'd'
+15    ALLOC
+16    STORE
+17    STORE_ADDR
+18    LOAD_CONST              'c'
+19    ALLOC
+20    STORE
+21    STORE_ADDR
+22    LOAD_CONST              'b'
+23    ALLOC
+24    STORE
+25    STORE_ADDR
+26    LOAD_CONST              'a'
+27    ALLOC
+28    STORE
+29    BIND_ADDR               l1
+30    LOAD_CONST              5
+31    LOAD_NAME               k
+32    STORE
+33    LOAD_NAME               l1
+34    LOAD_NAME               k
+35    LOAD_NAME               result
+36    PUSH_SCOPE
+37    BIND_ADDR               e
+38    BIND_ADDR               index
+39    BIND_ADDR               list
+40    CALL_SUBPROGRAM         76 (3)
+41    POP_SCOPE
+42    LABEL                   call_declaration_label_42
+43    LOAD_NAME               l1
+44    LOAD_NAME               length
+45    PUSH_SCOPE
+46    BIND_ADDR               len
+47    BIND_ADDR               list
+48    CALL_SUBPROGRAM         93 (2)
+49    POP_SCOPE
+50    LABEL                   call_declaration_label_50
+51    LOAD_NAME               l1
+52    PUSH_SCOPE
+53    BIND_ADDR               list
+54    CALL_SUBPROGRAM         151 (1)
+55    POP_SCOPE
+56    LABEL                   call_declaration_label_56
+57    LOAD_CONST              '5th element of l1: '
+58    LOAD_NAME               result
+59    DEREFERENCE
+60    CALL_FUNCTION           Print (2)
+61    LOAD_CONST              'length: '
+62    LOAD_NAME               length
+63    DEREFERENCE
+64    CALL_FUNCTION           Print (2)
+65    HALT
+66    LABEL                   get
+67    LOAD_CONST              Null
+68    LOAD_NAME               list
+69    STORE
+70    LOAD_CONST              Null
+71    LOAD_NAME               index
+72    STORE
+73    LOAD_CONST              Null
+74    LOAD_NAME               e
+75    STORE
+76    LOAD_NAME               list
+77    LOAD_NAME               index
+78    DEREFERENCE
+79    MULTIPLE_DEREFERENCE
+80    LOAD_CONST              1
+81    BINARY_ADD
+82    DEREFERENCE
+83    LOAD_NAME               e
+84    STORE
+85    RETURN_VALUE
+86    LABEL                   len
+87    LOAD_CONST              Null
+88    LOAD_NAME               list
+89    STORE
+90    LOAD_CONST              Null
+91    LOAD_NAME               len
+92    STORE
+93    LOAD_CONST              0
+94    STORE_NAME              i
+95    LOAD_NAME               i
+96    STORE
+97    LABEL                   loop_start_97
+98    LOAD_CONST              true
+99    JUMP_IF_FALSE           124
+100   LABEL                   loop_body_start_100
+101   LOAD_NAME               list
+102   LOAD_NAME               i
+103   DEREFERENCE
+104   MULTIPLE_DEREFERENCE
+105   LOAD_CONST              Null
+106   COMPARE_OP EQ
+107   JUMP_IF_FALSE           109
+108   JUMP                    110
+109   JUMP                    115
+110   LOAD_NAME               i
+111   DEREFERENCE
+112   LOAD_NAME               len
+113   STORE
+114   RETURN_VALUE
+115   LABEL                   k
+116   LABEL                   l
+117   LOAD_CONST              1
+118   LOAD_NAME               i
+119   DEREFERENCE
+120   BINARY_ADD
+121   LOAD_NAME               i
+122   STORE
+123   JUMP                    97
+124   LABEL                   loop_end_100
+125   RETURN_VALUE
+126   LABEL                   rem
+127   LOAD_CONST              Null
+128   LOAD_NAME               list
+129   STORE
+130   LOAD_CONST              Null
+131   LOAD_NAME               index
+132   STORE
+133   LOAD_NAME               list
+134   LOAD_NAME               index
+135   DEREFERENCE
+136   LOAD_CONST              1
+137   BINARY_ADD
+138   MULTIPLE_DEREFERENCE
+139   LOAD_NAME               list
+140   LOAD_NAME               index
+141   DEREFERENCE
+142   LOAD_CONST              1
+143   BINARY_SUBTRACT
+144   MULTIPLE_DEREFERENCE
+145   STORE
+146   RETURN_VALUE
+147   LABEL                   print
+148   LOAD_CONST              Null
+149   LOAD_NAME               list
+150   STORE
+151   LOAD_CONST              '['
+152   LOAD_NAME               str
+153   STORE
+154   LOAD_CONST              0
+155   STORE_NAME              i
+156   LOAD_NAME               i
+157   STORE
+158   LABEL                   loop_start_158
+159   LOAD_CONST              true
+160   JUMP_IF_FALSE           194
+161   LABEL                   loop_body_start_161
+162   LOAD_NAME               list
+163   LOAD_NAME               i
+164   DEREFERENCE
+165   MULTIPLE_DEREFERENCE
+166   LOAD_CONST              Null
+167   COMPARE_OP EQ
+168   JUMP_IF_FALSE           171
+169   JUMP                    195
+170   JUMP                    186
+171   LOAD_NAME               str
+172   DEREFERENCE
+173   LOAD_NAME               list
+174   LOAD_NAME               i
+175   DEREFERENCE
+176   MULTIPLE_DEREFERENCE
+177   LOAD_CONST              1
+178   BINARY_ADD
+179   DEREFERENCE
+180   CALL_FUNCTION           Str (1)
+181   BINARY_ADD
+182   LOAD_CONST              ', '
+183   BINARY_ADD
+184   LOAD_NAME               str
+185   STORE
+186   LABEL                   l1
+187   LOAD_CONST              1
+188   LOAD_NAME               i
+189   DEREFERENCE
+190   BINARY_ADD
+191   LOAD_NAME               i
+192   STORE
+193   JUMP                    158
+194   LABEL                   loop_end_161
+195   LABEL                   end
+196   LOAD_NAME               str
+197   DEREFERENCE
+198   LOAD_CONST              ']'
+199   BINARY_ADD
+200   CALL_FUNCTION           Print (1)
+201   RETURN_VALUE

@@ -60,6 +60,7 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
         Bytecode::MulDeref => format!("{:<5} {}\n", offset, "MULTIPLE_DEREFERENCE"),
         Bytecode::Store => format!("{:<5} {}\n", offset, "STORE"),
         Bytecode::Alloc => format!("{:<5} {}\n", offset, "ALLOC"),
+        Bytecode::AllocMany(n) => format!("{:<5} {:<23} {}\n", offset, "ALLOC_MANY", n),
         Bytecode::Dup => format!("{:<5} {}\n", offset, "DUP"),
         Bytecode::StoreAddr => format!("{:<5} {}\n", offset, "STORE_ADDR"),
         Bytecode::BindAddr(name) => format!("{:<5} {:<23} {}\n", offset, "BIND_ADDR", name),
@@ -70,7 +71,6 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
         ),
         Bytecode::PushScope => format!("{:<5} {}\n", offset, "PUSH_SCOPE"),
         Bytecode::PopScope => format!("{:<5} {}\n", offset, "POP_SCOPE"),
-        Bytecode::AllocMany(n) => format!("{:<5} {:<23} {}\n", offset, "ALLOC_MANY", n),
         Bytecode::Swap => format!("{:<5} {}\n", offset, "SWAP"),
     }
 }
@@ -172,12 +172,18 @@ fn parse_bytecode_instructions(contents: &str) -> Result<Vec<Bytecode>, io::Erro
             "MULTIPLE_DEREFERENCE" => Bytecode::MulDeref,
             "STORE" => Bytecode::Store,
             "ALLOC" => Bytecode::Alloc,
+            "ALLOC_MANY" => {
+                let count = parts[2]
+                    .parse()
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+                Bytecode::AllocMany(count)
+            }
             "DUP" => Bytecode::Dup,
             "FREE_ADDR" => Bytecode::FreeAddr,
             "STORE_ADDR" => Bytecode::StoreAddr,
             "PUSH_SCOPE" => Bytecode::PushScope,
             "POP_SCOPE" => Bytecode::PopScope,
-
+            "SWAP" => Bytecode::Swap,
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -217,12 +223,14 @@ mod tests {
             Bytecode::Jump(10),
             Bytecode::JumpIfFalse(15),
             Bytecode::Alloc,
+            Bytecode::AllocMany(5),
             Bytecode::Dup,
             Bytecode::StoreAddr,
             Bytecode::BindAddr("a".to_string()),
             Bytecode::FreeAddr,
             Bytecode::PushScope,
             Bytecode::PopScope,
+            Bytecode::Swap,
         ];
 
         let file_path = "test/bytecode/test_bytecode.txt";

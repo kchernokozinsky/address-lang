@@ -1,10 +1,9 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
 use parser::ast::{visitor::Visitor, *};
 use value::Value;
 
 use crate::bytecode::Bytecode;
-mod tests;
 pub struct BytecodeGenerator<'a> {
     bytecode: Vec<Bytecode>,
     labels: HashMap<String, usize>,
@@ -431,9 +430,299 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                         expr.accept(self);
                         self.bytecode.push(Bytecode::MulDeref)
                     }
-                    UnaryOp::Not => self.bytecode.push(Bytecode::Negate),
+                    UnaryOp::Not => self.bytecode.push(Bytecode::Not),
                 };
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_visit_binary_op() {
+        let source_text = "5 + 3";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::new_int(5)),
+                Bytecode::Constant(Value::new_int(3)),
+                Bytecode::Add
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_mulderef_op() {
+        let source_text = "D {var, 4}";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::LoadVar("var".to_string()),
+                Bytecode::Constant(Value::Int(4)),
+                Bytecode::MulDeref
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_deref_op() {
+        let source_text = "'4";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![Bytecode::Constant(Value::Int(4)), Bytecode::Deref]
+        );
+    }
+
+    #[test]
+    fn test_visit_not_op() {
+        let source_text = "not true";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![Bytecode::Constant(Value::new_bool(true)), Bytecode::Not]
+        );
+    }
+
+    #[test]
+    fn test_visit_if_else() {
+        let source_text = "P { 5 < 3 } 1 | 2";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::new_int(5)),
+                Bytecode::Constant(Value::new_int(3)),
+                Bytecode::Less,
+                Bytecode::JumpIfFalse(6),
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::Jump(7),
+                Bytecode::Constant(Value::new_int(2)),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_loop() {
+        let source_text = "
+        L {1, 1, 'i < 6 => i} a
+            Print {\"i: \", 'i}
+        a ...";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::StoreVar("i".to_string()),
+                Bytecode::LoadVar("i".to_string()),
+                Bytecode::Store,
+                Bytecode::Label("loop_start_4".to_string()),
+                Bytecode::LoadVar("i".to_string()),
+                Bytecode::Deref,
+                Bytecode::Constant(Value::new_int(6)),
+                Bytecode::Less,
+                Bytecode::JumpIfFalse(23),
+                Bytecode::Label("loop_body_start_10".to_string()),
+                Bytecode::Constant(Value::new_string("i: ".to_string())),
+                Bytecode::LoadVar("i".to_string()),
+                Bytecode::Deref,
+                Bytecode::CallBuiltin("Print".to_string(), 2),
+                Bytecode::Label("a".to_string()),
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::LoadVar("i".to_string()),
+                Bytecode::Deref,
+                Bytecode::Add,
+                Bytecode::LoadVar("i".to_string()),
+                Bytecode::Store,
+                Bytecode::Jump(4),
+                Bytecode::Label("loop_end_10".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_subprogram() {
+        let source_text = "
+        l1 = [1,2,3];
+        'k = 1
+        SP get {l1, k, result}
+        !
+        get ... null => list; null => index; null => e
+            'e = '(D {list, 'index} + 1)
+        return";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::Null),
+                Bytecode::StoreAddr,
+                Bytecode::Constant(Value::new_int(3)),
+                Bytecode::Alloc,
+                Bytecode::Store,
+                Bytecode::StoreAddr,
+                Bytecode::Constant(Value::new_int(2)),
+                Bytecode::Alloc,
+                Bytecode::Store,
+                Bytecode::StoreAddr,
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::Alloc,
+                Bytecode::Store,
+                Bytecode::BindAddr("l1".to_string()),
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::LoadVar("k".to_string()),
+                Bytecode::Store,
+                Bytecode::LoadVar("l1".to_string()),
+                Bytecode::LoadVar("k".to_string()),
+                Bytecode::LoadVar("result".to_string()),
+                Bytecode::PushScope,
+                Bytecode::BindAddr("e".to_string()),
+                Bytecode::BindAddr("index".to_string()),
+                Bytecode::BindAddr("list".to_string()),
+                Bytecode::CallSubProgram(38, 3),
+                Bytecode::PopScope,
+                Bytecode::Label("call_declaration_label_26".to_string()),
+                Bytecode::Halt,
+                Bytecode::Label("get".to_string()),
+                Bytecode::Constant(Value::Null),
+                Bytecode::LoadVar("list".to_string()),
+                Bytecode::Store,
+                Bytecode::Constant(Value::Null),
+                Bytecode::LoadVar("index".to_string()),
+                Bytecode::Store,
+                Bytecode::Constant(Value::Null),
+                Bytecode::LoadVar("e".to_string()),
+                Bytecode::Store,
+                Bytecode::LoadVar("list".to_string()),
+                Bytecode::LoadVar("index".to_string()),
+                Bytecode::Deref,
+                Bytecode::MulDeref,
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::Add,
+                Bytecode::Deref,
+                Bytecode::LoadVar("e".to_string()),
+                Bytecode::Store,
+                Bytecode::Return,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_list_allocation() {
+        let source_text = "[1, 2, 3]";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::Null),
+                Bytecode::StoreAddr,
+                Bytecode::Constant(Value::new_int(3)),
+                Bytecode::Alloc,
+                Bytecode::Store,
+                Bytecode::StoreAddr,
+                Bytecode::Constant(Value::new_int(2)),
+                Bytecode::Alloc,
+                Bytecode::Store,
+                Bytecode::StoreAddr,
+                Bytecode::Constant(Value::new_int(1)),
+                Bytecode::Alloc,
+                Bytecode::Store,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_assign_statement() {
+        let source_text = "x = 10";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::new_int(10)),
+                Bytecode::BindAddr("x".to_string())
+            ]
+        );
+    }
+
+    #[test]
+    fn test_visit_logical_operations() {
+        let source_text = "true and false or not true";
+        let algo: Algorithm = parser::parse(&source_text).unwrap();
+
+        let mut generator = BytecodeGenerator::new(&algo);
+        generator.visit_algorithm(&algo);
+
+        let bytecode = generator.get_bytecode();
+        println!("{:?}", bytecode);
+        assert_eq!(
+            bytecode,
+            vec![
+                Bytecode::Constant(Value::new_bool(true)),
+                Bytecode::Constant(Value::new_bool(false)),
+                Bytecode::And,
+                Bytecode::Constant(Value::new_bool(true)),
+                Bytecode::Not,
+                Bytecode::Or
+            ]
+        );
     }
 }
