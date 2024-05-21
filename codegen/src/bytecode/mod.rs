@@ -1,6 +1,6 @@
 use value::Value;
 
-pub mod io;
+pub mod serializer;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Bytecode {
