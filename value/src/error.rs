@@ -1,4 +1,5 @@
-use common::typings::Type;
+use crate::typings::Type;
+
 #[derive(Debug)]
 pub enum ValueError {
     IncompatibleTypes {

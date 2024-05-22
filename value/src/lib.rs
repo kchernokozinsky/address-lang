@@ -1,7 +1,9 @@
 pub mod error;
+pub mod typings;
+use typings::Type;
 
 use crate::error::ValueError;
-use common::typings::Type;
+
 use std::fmt::{self};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
