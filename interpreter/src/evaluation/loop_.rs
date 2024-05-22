@@ -1,5 +1,6 @@
+use value::typings::Type;
+
 use super::*;
-use common::typings::Type;
 
 impl Evaluator {
     fn process_lines_inside_loop(

@@ -5,11 +5,11 @@ pub mod runtime_context;
 pub mod subprogram;
 
 use common::location::Location;
-use common::typings::Type;
 use errors::*;
 use parser::ast::*;
 use runtime_context::*;
 use value::error::ValueError;
+use value::typings::Type;
 use value::*;
 pub struct Evaluator {
     lines: Vec<FileLine>,
