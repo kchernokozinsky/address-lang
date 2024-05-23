@@ -10,17 +10,12 @@ pub fn run(input: String, output: Option<String>) {
     );
     match parse_by_path(&input) {
         Ok(ast) => {
-            println!(
-                "{}",
-                "Syntactic analysis completed successfully.".green().bold()
-            );
+            println!("{}", "Syntactic analysis completed successfully.".green());
             if let Some(output) = output {
                 serialize_ast_to_file(&ast, &output).expect("Serialization failed");
                 println!(
                     "{}",
-                    format!("Analysis results have been saved to: {}", output)
-                        .green()
-                        .bold()
+                    format!("Analysis results have been saved to: {}", output).green()
                 );
             } else {
                 println!("{}", format!("{:?}", ast).green());
