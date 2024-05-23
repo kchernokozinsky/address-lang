@@ -60,13 +60,14 @@ fn main() {
             break;
         }
 
-        let args = match Args::try_parse_from(format!("adl-cli {}", trimmed_input).split_whitespace()) {
-            Ok(args) => args,
-            Err(e) => {
-                eprintln!("{}", e.to_string().red());
-                continue;
-            }
-        };
+        let args =
+            match Args::try_parse_from(format!("adl-cli {}", trimmed_input).split_whitespace()) {
+                Ok(args) => args,
+                Err(e) => {
+                    eprintln!("{}", e.to_string().red());
+                    continue;
+                }
+            };
 
         match args.cmd {
             Commands::Parse { input, output } => parse::run(input, output),

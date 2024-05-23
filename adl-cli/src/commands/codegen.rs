@@ -3,7 +3,12 @@ use colored::*;
 use common::util::read_file;
 
 pub fn run(input: String, output: Option<String>) {
-    println!("{}", format!("Generating bytecode from: {}", input).green().bold());
+    println!(
+        "{}",
+        format!("Generating bytecode from: {}", input)
+            .green()
+            .bold()
+    );
     let source_text = read_file(&input);
     match parser::parse(&source_text) {
         Ok(ast) => {
@@ -12,7 +17,12 @@ pub fn run(input: String, output: Option<String>) {
             println!("{}", "Bytecode generated successfully.".green().bold());
             if let Some(output) = output {
                 write_bytecode_to_file(&bytecode, &output).expect("Serialization failed");
-                println!("{}", format!("Bytecode has been saved to: {}", output).green().bold());
+                println!(
+                    "{}",
+                    format!("Bytecode has been saved to: {}", output)
+                        .green()
+                        .bold()
+                );
             } else {
                 println!("{}", format!("{:?}", bytecode).green());
             }

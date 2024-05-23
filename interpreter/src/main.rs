@@ -6,8 +6,6 @@ use interpreter::evaluation;
 use parser::ast::Algorithm;
 use value::*;
 
-
-
 fn main() {
     let mut env = RuntimeContext::new();
     env.add_function("Print", Value::new_function(print_));

@@ -1,4 +1,9 @@
-use evaluation::{builtins::{print_, to_string_}, errors::EvaluationErrorPrinter, runtime_context::RuntimeContext, Evaluator};
+use evaluation::{
+    builtins::{print_, to_string_},
+    errors::EvaluationErrorPrinter,
+    runtime_context::RuntimeContext,
+    Evaluator,
+};
 use parser::ast::Algorithm;
 use value::Value;
 
