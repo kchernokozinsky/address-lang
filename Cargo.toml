@@ -5,6 +5,6 @@ members = [
     "interpreter",
     "lexer", 
     "common", "value"
-, "codegen", "vm"]
+, "codegen", "vm", "adl-cli"]
 
 
