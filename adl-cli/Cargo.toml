@@ -1,0 +1,19 @@
+[package]
+name = "adl-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "adl-cli"
+path = "src/main.rs"
+
+[dependencies]
+common = { path = "../common" }
+parser = { path = "../parser" }
+lexer = { path = "../lexer" }
+codegen = { path = "../codegen" }
+vm = { path = "../vm" }
+interpreter = { path = "../interpreter" }
+
+clap = {version = "4.3.23", features = ["derive"]}
+colored = "2.0"

@@ -75,7 +75,7 @@ fn format_bytecode_instruction(offset: usize, instruction: &Bytecode) -> String 
     }
 }
 
-fn parse_bytecode_instructions(contents: &str) -> Result<Vec<Bytecode>, io::Error> {
+pub fn parse_bytecode_instructions(contents: &str) -> Result<Vec<Bytecode>, io::Error> {
     let mut bytecode = Vec::new();
     for line in contents.lines() {
         let parts: Vec<&str> = line.split_whitespace().collect();

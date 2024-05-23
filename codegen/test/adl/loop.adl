@@ -4,7 +4,6 @@ l1 = ["a", "b", "c", "d", "e", "f", "g"];
 
 SP get {l1, k, result}
 SP len {l1, length}
-SP print {l1}
 
 Print{"5th element of l1: ", 'result}
 Print{"length: ",'length}
@@ -36,12 +35,4 @@ rem ... null => list; null => index
     D {list, 'index} = D {list, 'index + 1}
 return
 
-# print list elements
-print ... null => list
-    'str = "[" 
-    L {0, 1, true => i } l1
-            P {D {list, 'i} == null} @end | 'str = 'str + Str {'(D {list, 'i} + 1)} + ", "
-    l1 ... 
-end... Print {'str + "]"}
-return
 
