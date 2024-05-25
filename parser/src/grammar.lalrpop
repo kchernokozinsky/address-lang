@@ -277,6 +277,12 @@ ExpressionPrecedence2: Expression = {
         r_location,
         node: ExpressionKind::UnaryOp{op: UnaryOp::Dereference, expr: Box::new(expression)},
         },
+    <l_location:@L> "-" <expression:ExpressionPrecedence2> <r_location:@L> => Expression 
+        {
+        l_location,
+        r_location,
+        node: ExpressionKind::UnaryOp{op: UnaryOp::Minus, expr: Box::new(expression)},
+        },
 
     ExpressionPrecedence1
 }

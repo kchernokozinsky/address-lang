@@ -1,0 +1,20 @@
+'l = "c"
+'k = "c"
+Print{l}
+Print{k}
+fathers = D {"c", -1 }
+SP print {fathers} 
+
+!
+
+# print list elements
+print ... null => list
+    'str = "[" 
+    L {0, 1, true => i } l3
+            Print{"i: ", 'i, " curr addr: ", D {list, 'i}}
+            P {D {list, 'i} == null} @end | 'str = Concat {'str,'(D {list, 'i} + 1),","}
+    l3 ... 
+end...
+# 'str = Concat {'str,(D {list, 'i} + 1)}
+Print {'str, 0, -1, "]"}}
+return

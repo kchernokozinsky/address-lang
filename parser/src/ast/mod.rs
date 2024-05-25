@@ -223,6 +223,7 @@ pub enum BinaryOp {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnaryOp {
     Dereference,
+    Minus,
     MultipleDereference(Box<Expression>),
     Not,
 }

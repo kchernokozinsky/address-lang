@@ -1,0 +1,66 @@
+l = [1]
+SP print {l}
+k = [4]
+SP append {l, k}
+SP print {l}
+
+
+!
+# get element value by its index 
+get ... null => list; null => index; null => e
+
+    'e = '(D {list, 'index} + 1)
+
+return
+
+# concat lists
+concat ... null => list1; null => list2;
+
+    SP len {list1, len1}
+    '(D {list1, 'len1 - 1}) = list2
+
+return
+
+# get length of the list
+len ... null => list; null => len
+
+    L {0, 1, true => i } l1
+        
+    P {D {list, 'i} == null} | @k
+            'len = 'i; 
+            return
+        k...
+    l1 ... 
+ return   
+ 
+ empty... null => list
+
+ list = []
+
+ return
+
+ append ... null =>list; null => el
+
+    SP len {list, len}
+    '(D {list, 'len - 1}) = [el]
+
+return
+
+# rem element by its index 
+rem ... null => list; null => index;
+
+    D {list, 'index} = D {list, 'index + 1}
+
+return
+
+# print list elements
+print ... null => list
+    'str = "[" 
+    L {0, 1, true => i } l3
+            Print{"i: ", 'i, " curr addr: ", D {list, 'i}}
+            P {D {list, 'i} == null} @end | 'str = Concat {'str,'(D {list, 'i} + 1),","}
+    l3 ... 
+end...
+# 'str = Concat {'str,(D {list, 'i} + 1)}
+Print {'str, "]"}
+return

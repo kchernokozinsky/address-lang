@@ -6,7 +6,7 @@ use crate::error::ValueError;
 
 use std::fmt::{self};
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialOrd)]
 pub enum Value {
     Null,
     Float(f64),
@@ -15,6 +15,24 @@ pub enum Value {
     Int(i64),
     Function(fn(Vec<Value>) -> Result<Value, String>),
 }
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Float(a), Value::Float(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Int(a), Value::Int(b)) => a == b,
+            // Comparing function pointers directly
+            (Value::Function(a), Value::Function(b)) => a as *const _ == b as *const _,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Value {}
+
 impl Value {
     pub fn new_int(value: i64) -> Value {
         Value::Int(value)
@@ -254,7 +272,7 @@ impl fmt::Display for Value {
             Value::Bool(value) => write!(f, "{}", value),
             Value::Int(value) => write!(f, "{}", value),
             Value::Function(_) => write!(f, "Function"),
-            Value::String(value) => write!(f, "\"{}\"", value),
+            Value::String(value) => write!(f, "{}", value),
             Value::Float(value) => write!(f, "{}", value),
         }
     }

@@ -5,4 +5,7 @@ node2 = ["node2", node3, null]
 root = ["root_value", node1, node2]
 
 
+Print { D{node2, -1}}
+
+
 

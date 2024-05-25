@@ -107,6 +107,10 @@ impl<'a> BytecodeGenerator<'a> {
     }
 
     fn generate_list(&mut self, elements: &[Box<Expression>]) {
+        if elements.is_empty() {
+            self.bytecode.push(Bytecode::Constant(Value::Null));
+            return;
+        }
         // allocate last element
         // self.bytecode.push(Bytecode::Store);
         self.bytecode.push(Bytecode::Constant(Value::Null));
@@ -354,6 +358,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                             self.bytecode.push(Bytecode::Store);
                         }
                         UnaryOp::Not => todo!(),
+                        UnaryOp::Minus => todo!(),
                     },
                     ExpressionKind::BinaryOp { .. } => todo!(),
                 }
@@ -431,6 +436,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                         self.bytecode.push(Bytecode::MulDeref)
                     }
                     UnaryOp::Not => self.bytecode.push(Bytecode::Not),
+                    UnaryOp::Minus => self.bytecode.push(Bytecode::Negate),
                 };
             }
         }
