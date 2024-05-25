@@ -334,6 +334,7 @@ impl Evaluator {
                                 Err(e) => return Err(e),
                             };
                         }
+                        UnaryOp::Minus => todo!(),
                     },
                     ExpressionKind::BinaryOp { .. } => {
                         match self.eval_expression(lhs.clone())?.extract_int() {
@@ -598,6 +599,7 @@ impl Evaluator {
                         Err(e) => return Err(e),
                     };
                 }
+                UnaryOp::Minus => todo!(),
             },
             ExpressionKind::Bool { value } => Ok(Value::new_bool(value)),
             ExpressionKind::String { value } => Ok(Value::new_string(value)),

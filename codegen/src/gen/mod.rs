@@ -354,6 +354,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                             self.bytecode.push(Bytecode::Store);
                         }
                         UnaryOp::Not => todo!(),
+                        UnaryOp::Minus => todo!(),
                     },
                     ExpressionKind::BinaryOp { .. } => todo!(),
                 }
@@ -431,6 +432,7 @@ impl<'a> Visitor for BytecodeGenerator<'a> {
                         self.bytecode.push(Bytecode::MulDeref)
                     }
                     UnaryOp::Not => self.bytecode.push(Bytecode::Not),
+                    UnaryOp::Minus => self.bytecode.push(Bytecode::Negate),
                 };
             }
         }
