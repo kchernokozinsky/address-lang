@@ -221,6 +221,7 @@ impl VM {
         }
     }
 
+    pub fn allocate_list(&mut self, elements: Vec<Value>) -> i64 {
         let mut addresses = self.allocate_consecutive_addresses(2);
         let head = addresses[0];
         let mut i = 0;
