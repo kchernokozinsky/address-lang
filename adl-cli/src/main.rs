@@ -100,17 +100,18 @@ fn print_welcome_message() {
     
                                  Welcome to adl-cli 
 
-    usage: adl-cli [command] [options]
+                                 Usage: adl-cli <COMMAND>
 
-    commands: 
-
-        - run   
-
-        - interpret
-
-        - codegen
-
-        - parse
+                                 Commands:
+                                   parse      
+                                   codegen    
+                                   run        
+                                   interpret  
+                                   help       Print this message or the help of the given subcommand(s)
+                                 
+                                 Options:
+                                   -h, --help     Print help
+                                   -V, --version  Print version
 
 
 "#;
