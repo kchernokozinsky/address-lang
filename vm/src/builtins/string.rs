@@ -19,9 +19,9 @@ pub fn builtin_char_at(vm: &mut VM, args: Vec<Value>) -> Value {
 pub fn builtin_concat(vm: &mut VM, args: Vec<Value>) -> Value {
     let mut result: String = String::new();
     for arg in args {
-            result.push_str(&arg.to_string()) 
+        result.push_str(&arg.to_string())
     }
-   
+
     Value::String(result)
 }
 
@@ -29,7 +29,9 @@ pub fn builtin_replace(vm: &mut VM, args: Vec<Value>) -> Value {
     if args.len() != 3 {
         panic!("replace() takes exactly three arguments");
     }
-    if let (Value::String(s), Value::String(old), Value::String(new)) = (&args[0], &args[1], &args[2]) {
+    if let (Value::String(s), Value::String(old), Value::String(new)) =
+        (&args[0], &args[1], &args[2])
+    {
         Value::String(s.replace(old, new))
     } else {
         panic!("Invalid arguments for replace()");

@@ -1,0 +1,84 @@
+
+"Alice" => name1
+23 => age1
+null => married_on1
+
+"Bob" => name2
+25 => age2
+null => married_on2
+
+SP new {name1,age1, married_on1, alice}
+SP new {name2,age2, married_on2, bob}
+
+SP say_hi {'alice}
+SP say_age {'alice}
+SP marry {alice, bob}
+SP say_who_you_married_on {alice}
+!
+
+new ... null => name; null => age; null => married_on; null => person;
+    'name => p
+    'age => p + 1
+    'married_on => p + 2;
+    p => person
+return
+
+# new ... ∅ => name; ∅ => age; ∅ => married_on; ∅ => person;
+#     'name => p
+#     'age => p + 1
+#     'married_on => p + 2;
+#     p => person
+# ᗺ
+
+# rem ... ∅ => person;
+#     null => person
+#     null => person + 1
+#     null => person + 2;
+# ᗺ
+
+rem ... null => person;
+    null => person
+    null => person + 1
+    null => person + 2;
+return
+
+say_hi ... null => person;
+    P {'person == null} Print {"Hello, I have no name :("} | Print {"Hello, my name is ", 'person}
+return
+
+# say_hi ... ∅ => person;
+#     P {'person = null} Print {"Hello, I have no name :("} ↓ Print {"Hello, my name is ", 'person}
+# ᗺ
+
+say_age ... null => person;
+    P {'(person + 1) == null} Print {"I don`t how old I am :("} | Print {"I`m ", '(person + 1), " years old"}
+return
+
+# say_age ... ∅ => person;
+#     P {'(person + 1) = null} Print {"I don`t how old I am :("} ↓ Print {"I`m ", '(person + 1), " years old"}
+# ᗺ
+
+say_who_you_married_on ... null => person;
+    p = 'person + 2
+    P { 'p == null} Print {"I`m not married yet"} | Print {"I`m married on ", ''p}
+return
+
+# say_who_you_married_on ... ∅ => person;
+#     p = 'person + 2
+#     P { 'p = null} Print {"I`m not married yet"} ↓ Print {"I`m married on ", ''p}
+# ᗺ
+
+marry ... null => person1; null => person2;
+    'person2 => 'person1 + 2
+    'person1 => 'person2 + 2
+return
+
+# marry ... ∅ => person1; ∅ => person2
+#     'person2 => 'person1 + 2
+#     'person1 => 'person2 + 2
+# ᗺ
+
+
+
+
+

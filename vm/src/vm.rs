@@ -1,5 +1,5 @@
 use log::trace;
-use std::{clone, collections::HashMap};
+use std::collections::HashMap;
 
 use codegen::bytecode::Bytecode;
 use value::Value;
@@ -13,9 +13,9 @@ pub struct VM {
     scopes: Vec<Scope>,
     values_by_address: HashMap<i64, Value>,
     builtins: HashMap<String, BuiltinFunction>,
-    next_address: i64,      // To keep track of the next free address
-    free_list: Vec<i64>,    // List of freed addresses
-    call_stack: Vec<usize>, // Stack to store return addresses
+    next_address: i64,
+    free_list: Vec<i64>,
+    call_stack: Vec<usize>,
 }
 
 impl VM {
@@ -60,6 +60,10 @@ impl VM {
         let start_address = self.next_address;
         self.next_address += count as i64;
         (start_address..start_address + count as i64).collect()
+    }
+
+    fn is_address_free(&self, address: i64) -> bool {
+        !self.values_by_address.contains_key(&address)
     }
 
     fn is_block_free(&self, start: i64, count: usize) -> bool {
@@ -192,7 +196,12 @@ impl VM {
         } else {
             let address = self.next_address;
             self.next_address += 1;
-            address
+            if self.is_address_free(address) {
+                self.values_by_address.insert(address, Value::Null);
+                address
+            } else {
+                self.allocate_address()
+            }
         }
     }
 
@@ -229,12 +238,13 @@ impl VM {
             i += 1;
             self.values_by_address.insert(addresses[0], Value::Null);
             self.values_by_address.insert(addresses[1], elem);
-            let next: Vec<i64> = self.allocate_consecutive_addresses(2);
-            if i != elements.len() {
-                self.values_by_address.insert(addresses[0], Value::new_int(next[0]));
-            }
 
-            addresses = next;
+            if i != elements.len() {
+                let next: Vec<i64> = self.allocate_consecutive_addresses(2);
+                self.values_by_address
+                    .insert(addresses[0], Value::new_int(next[0]));
+                addresses = next;
+            }
         }
         head
     }
@@ -247,10 +257,13 @@ impl VM {
         } else if n < 0 {
             let values = vec![address];
             let fathers = self.mul_minus_deref_vec(values, n);
-            let head = self.allocate_list(fathers);
-            self.stack.push(Value::Int(head));
-        }
-        else {
+            if fathers.is_empty() {
+                self.stack.push(Value::Null);
+            } else {
+                let head = self.allocate_list(fathers);
+                self.stack.push(Value::Int(head));
+            }
+        } else {
             let mut address_p = address.extract_int().unwrap();
             for _ in 1..n {
                 address_p = self
@@ -260,34 +273,37 @@ impl VM {
                     .extract_int()
                     .unwrap();
             }
+
             self.stack.push(self.values_by_address[&address_p].clone());
         }
     }
 
-    fn minus_deref(&mut self, value: Value) -> Vec<Value> { 
+    fn minus_deref(&mut self, value: Value) -> Vec<Value> {
         self.minus_deref_vec(vec![value])
     }
 
-    fn mul_minus_deref_vec(&self, values: Vec<Value>, n: i64) -> Vec<Value> { 
-        if n == 0 {return  values}
-        let selected_ids: Vec<Value> = self.values_by_address
-                .iter()
-                .filter(|(_key, v)|values.contains(v))
-                .map(|(&key, _value)| Value::new_int(key.clone()))
-                .collect();
+    fn mul_minus_deref_vec(&self, values: Vec<Value>, n: i64) -> Vec<Value> {
+        if n == 0 {
+            return values;
+        }
+        let selected_ids: Vec<Value> = self
+            .values_by_address
+            .iter()
+            .filter(|(_key, v)| values.contains(v))
+            .map(|(&key, _value)| Value::new_int(key.clone()))
+            .collect();
         return self.mul_minus_deref_vec(selected_ids, n + 1);
     }
 
-    fn minus_deref_vec(&self, values: Vec<Value>) -> Vec<Value> { 
-        let selected_ids: Vec<Value> = self.values_by_address
-                .iter()
-                .filter(|(_key, v)|values.contains(v))
-                .map(|(&key, _value)| Value::new_int(key.clone()))
-                .collect();
+    fn minus_deref_vec(&self, values: Vec<Value>) -> Vec<Value> {
+        let selected_ids: Vec<Value> = self
+            .values_by_address
+            .iter()
+            .filter(|(_key, v)| values.contains(v))
+            .map(|(&key, _value)| Value::new_int(key.clone()))
+            .collect();
         return selected_ids;
     }
-
-    
 
     fn dup(&mut self) {
         if let Some(value) = self.stack.last().cloned() {

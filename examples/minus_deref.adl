@@ -1,8 +1,10 @@
 'l = "c"
+'d = l
 'k = "c"
-Print{l}
-Print{k}
-fathers = D {"c", -1 }
+Print{"d: ", d}
+Print{"l: ", l}
+Print{"k:", k}
+fathers = D {"c", -2 }
 SP print {fathers} 
 
 !
@@ -11,10 +13,9 @@ SP print {fathers}
 print ... null => list
     'str = "[" 
     L {0, 1, true => i } l3
-            Print{"i: ", 'i, " curr addr: ", D {list, 'i}}
             P {D {list, 'i} == null} @end | 'str = Concat {'str,'(D {list, 'i} + 1),","}
     l3 ... 
 end...
 # 'str = Concat {'str,(D {list, 'i} + 1)}
-Print {'str, 0, -1, "]"}}
+Print {'str,"]"}
 return

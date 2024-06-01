@@ -1,10 +1,9 @@
-# head address inizialization
-l= 40;
 
-# associate l2 addresses 
-'l = 110; ''l = 18;
+110 => l; 18 =>'l
 
-#fill elements h_b with values
-'(l + 1)    = "c"; 
-'('l + 1)   = "d"; 
-'(''l + 1)  = "e"; 
+"c" => l + 1
+"d" => 'l + 1 
+"e" => ''l + 1; 
+
+
+l = [ "c", "d", "e" ]

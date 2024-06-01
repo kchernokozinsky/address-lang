@@ -13,6 +13,6 @@ pub fn execute_bytecode(bytecode: Vec<Bytecode>) {
     vm.register_builtin("Concat", builtin_concat);
     vm.register_builtin("Replace", builtin_replace);
     vm.register_builtin("SubString", builtin_substring);
-    
+
     vm.run();
 }
