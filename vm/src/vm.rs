@@ -167,7 +167,13 @@ impl VM {
         if let Value::Int(addr) = address {
             self.current_scope().set_var(&name, addr);
         } else {
-            panic!("{}", format!("BindAddr operation requires an integer address on the stack, but got {}", address));
+            panic!(
+                "{}",
+                format!(
+                    "BindAddr operation requires an integer address on the stack, but got {}",
+                    address
+                )
+            );
         }
     }
 
