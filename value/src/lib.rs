@@ -106,23 +106,23 @@ impl Value {
         }
     }
 
-    pub fn and(lv: Value, rv: Value) -> Result<Value, ValueError> {
-        match (&lv, &rv) {
+    pub fn and(lv: &Value, rv: &Value) -> Result<Value, ValueError> {
+        match (lv, rv) {
             (Value::Bool(lv), Value::Bool(rv)) => Ok(Value::Bool(*lv && *rv)),
             _ => Err(Value::raise_incompatible_types_error(
-                &lv,
-                &rv,
+                lv,
+                rv,
                 "and".to_owned(),
             )),
         }
     }
 
-    pub fn or(lv: Value, rv: Value) -> Result<Value, ValueError> {
-        match (&lv, &rv) {
+    pub fn or(lv: &Value, rv: &Value) -> Result<Value, ValueError> {
+        match (lv, rv) {
             (Value::Bool(lv), Value::Bool(rv)) => Ok(Value::Bool(*lv || *rv)),
             _ => Err(Value::raise_incompatible_types_error(
-                &lv,
-                &rv,
+                lv,
+                rv,
                 "and".to_owned(),
             )),
         }
@@ -235,6 +235,33 @@ impl Value {
                 other,
                 ">=".to_owned(),
             )),
+        }
+    }
+
+    pub fn negate(&self) -> Result<Value, ValueError> {
+        match self {
+            Value::Int(value) => Ok(Value::Int(-value)),
+            Value::Float(value) => Ok(Value::Float(-value)),
+            _ => Err(Value::raise_unexpected_type_error(Type::Int, self)),
+        }
+    }
+
+    pub fn modulus(lv: &Value, rv: &Value) -> Result<Value, ValueError> {
+        match (lv, rv) {
+            (Value::Int(lv), Value::Int(rv)) => Ok(Value::Int(lv % rv)),
+            (Value::Float(lv), Value::Float(rv)) => Ok(Value::Float(lv % rv)),
+            _ => Err(Value::raise_incompatible_types_error(
+                lv,
+                rv,
+                "%".to_owned(),
+            )),
+        }
+    }
+
+    pub fn not(&self) -> Result<Value, ValueError> {
+        match self {
+            Value::Bool(value) => Ok(Value::Bool(!value)),
+            _ => Err(Value::raise_unexpected_type_error(Type::Bool, self)),
         }
     }
 

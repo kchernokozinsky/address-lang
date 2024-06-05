@@ -522,7 +522,7 @@ impl Evaluator {
                         )),
                     },
                     BinaryOp::Mod => todo!(),
-                    BinaryOp::And => match Value::and(lv, rv) {
+                    BinaryOp::And => match Value::and(&lv, &rv) {
                         Ok(v) => Ok(v),
                         Err(e) => Err(EvaluationError::RuntimeError(
                             expression.l_location,
@@ -530,7 +530,7 @@ impl Evaluator {
                             RuntimeError::TypeError(e),
                         )),
                     },
-                    BinaryOp::Or => match Value::or(lv, rv) {
+                    BinaryOp::Or => match Value::or(&lv, &rv) {
                         Ok(v) => Ok(v),
                         Err(e) => Err(EvaluationError::RuntimeError(
                             expression.l_location,

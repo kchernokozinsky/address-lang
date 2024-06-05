@@ -23,7 +23,7 @@ pub fn run(input: String, output: Option<String>) {
         }
         Err(e) => eprintln!(
             "{}",
-            format!("Syntactic analysis failed: {:?}", e).red().bold()
+            format!("Syntactic analysis failed: {:?}", e).red()
         ),
     }
 }

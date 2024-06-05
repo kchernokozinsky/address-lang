@@ -1,12 +1,13 @@
 pub mod builtins;
+pub mod heap;
 pub mod scope;
 pub mod vm;
 
 use builtins::{print::builtin_print, string::*};
 use codegen::bytecode::Bytecode;
-use vm::VM;
+use vm::{error::VMError, VM};
 
-pub fn execute_bytecode(bytecode: Vec<Bytecode>) {
+pub fn execute_bytecode(bytecode: Vec<Bytecode>) -> Result<(), VMError> {
     let mut vm = VM::new(bytecode);
     vm.register_builtin("Print", builtin_print);
     vm.register_builtin("CharAt", builtin_char_at);
@@ -14,5 +15,5 @@ pub fn execute_bytecode(bytecode: Vec<Bytecode>) {
     vm.register_builtin("Replace", builtin_replace);
     vm.register_builtin("SubString", builtin_substring);
 
-    vm.run();
+    vm.run()
 }
