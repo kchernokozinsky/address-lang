@@ -20,7 +20,7 @@ return
 # get length of the list
 len ... null => list; null => len
 
-    L {0, 1 , true => i } l
+    L {0, 1, true => i } l
         
         P {D {list, 'i} == null} | @k
                 'len = 'i; 

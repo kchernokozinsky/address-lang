@@ -20,10 +20,7 @@ pub fn run_bytecode(bytecode: String) {
                 Err(e) => eprintln!("{}", format!("{:?}", e).red()),
             }
         }
-        Err(e) => eprintln!(
-            "{}",
-            format!("Failed to parse bytecode: {:?}", e).red()
-        ),
+        Err(e) => eprintln!("{}", format!("Failed to parse bytecode: {:?}", e).red()),
     }
 }
 

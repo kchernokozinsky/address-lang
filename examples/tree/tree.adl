@@ -6,7 +6,6 @@ SP node {root}
 20 => a
 SP node {a}
 
-
 50 => b
 SP node {b}
 
@@ -20,7 +19,6 @@ SP node {d}
 SP node {e}
  
 20 => val
-
 SP insert {root, a}
 SP insert {root, b}
 SP insert {root, c}

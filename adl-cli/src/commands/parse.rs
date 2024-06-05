@@ -21,9 +21,6 @@ pub fn run(input: String, output: Option<String>) {
                 println!("{}", format!("{:?}", ast).green());
             }
         }
-        Err(e) => eprintln!(
-            "{}",
-            format!("Syntactic analysis failed: {:?}", e).red()
-        ),
+        Err(e) => eprintln!("{}", format!("Syntactic analysis failed: {:?}", e).red()),
     }
 }

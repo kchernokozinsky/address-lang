@@ -19,8 +19,7 @@ pub fn run(input: String, output: Option<String>) {
                 write_bytecode_to_file(&bytecode, &output).expect("Serialization failed");
                 println!(
                     "{}",
-                    format!("Bytecode has been saved to: {}", output)
-                        .green()
+                    format!("Bytecode has been saved to: {}", output).green()
                 );
             } else {
                 println!("{}", format!("{:?}", bytecode).green());

@@ -1,13 +1,12 @@
 pub mod error;
 
+use codegen::bytecode::Bytecode;
 use error::VMError;
 use log::trace;
 use std::collections::HashMap;
-use codegen::bytecode::Bytecode;
 use value::{error::ValueError, Value};
 
 use crate::{builtins::BuiltinFunction, heap::Heap, scope::Scope};
-
 
 pub struct VM {
     bytecode: Vec<Bytecode>,
@@ -26,7 +25,7 @@ impl VM {
             pc: 0,
             stack: Vec::new(),
             scopes: vec![Scope::new()],
-            heap: Heap::new(),
+            heap: Heap::new(4000, 0.25),
             builtins: HashMap::new(),
             call_stack: Vec::new(),
         }
@@ -76,10 +75,10 @@ impl VM {
                 Bytecode::Deref => self.deref()?,
                 Bytecode::MulDeref => self.mul_deref()?,
                 Bytecode::Store => self.store()?,
-                Bytecode::Alloc => self.alloc()?,
-                Bytecode::AllocMany(count) => self.alloc_many(count)?,
+                Bytecode::Alloc => self.alloc(false)?,
+                Bytecode::AllocMany(count) => self.alloc_many(count, false)?,
                 Bytecode::Dup => self.dup()?,
-                Bytecode::StoreAddr => self.store_addr()?,
+                Bytecode::StoreAddr => self.store_addr(false)?,
                 Bytecode::BindAddr(name) => self.bind_addr(name)?,
                 Bytecode::PushScope => self.push_scope(),
                 Bytecode::PopScope => self.pop_scope()?,
@@ -119,28 +118,30 @@ impl VM {
     }
 
     fn store(&mut self) -> Result<(), VMError> {
+        // println!("store");
         let addr = self.stack.pop().ok_or(VMError::StackUnderflow)?;
         match addr {
             Value::Int(address) => {
                 let value = self.stack.pop().ok_or(VMError::StackUnderflow)?;
-                self.heap.store(address, value);
+                self.heap.store(address, value)?;
                 Ok(())
             }
             _ => Err(VMError::InvalidAddress),
         }
     }
 
-    fn store_addr(&mut self) -> Result<(), VMError> {
+    fn store_addr(&mut self, reserved: bool) -> Result<(), VMError> {
         let value = self.stack.pop().ok_or(VMError::StackUnderflow)?;
         self.stack
-            .push(Value::new_int(self.heap.store_value(value)));
+            .push(Value::new_int(self.heap.store_value(value, reserved)?));
         Ok(())
     }
 
     fn bind_addr(&mut self, name: String) -> Result<(), VMError> {
+        // println!("bind_addr");
         let address = self.stack.pop().ok_or(VMError::StackUnderflow)?;
         if let Value::Int(addr) = address {
-            self.current_scope().set_var(&name, addr);
+            self.current_scope().set_var(&name, addr)?;
             Ok(())
         } else {
             Err(VMError::InvalidAddress)
@@ -148,29 +149,30 @@ impl VM {
     }
 
     fn get_var(&mut self, name: &str) -> Result<(), VMError> {
-        let address = self.current_scope().get_var(name).unwrap_or_else(|| {
-            let address = self.heap.allocate_address();
-            self.current_scope().set_var(name, address);
-            address
-        });
-        self.stack.push(Value::Int(address));
+        if let Ok(address) = self.current_scope().get_var(name) {
+            self.stack.push(Value::Int(address));
+        } else {
+            let address = self.heap.allocate_address(false)?;
+            self.current_scope().set_var(name, address)?;
+            self.stack.push(Value::Int(address));
+        }
         Ok(())
     }
 
     fn set_var(&mut self, name: &str) -> Result<(), VMError> {
-        let address = self.heap.allocate_address();
-        self.current_scope().set_var(name, address);
+        let address = self.heap.allocate_address(false)?;
+        self.current_scope().set_var(name, address)?;
         Ok(())
     }
 
-    fn alloc(&mut self) -> Result<(), VMError> {
-        let new_address = self.heap.allocate_address();
+    fn alloc(&mut self, reserved: bool) -> Result<(), VMError> {
+        let new_address = self.heap.allocate_address(reserved)?;
         self.stack.push(Value::new_int(new_address));
         Ok(())
     }
 
-    fn alloc_many(&mut self, count: usize) -> Result<(), VMError> {
-        let addresses = self.heap.allocate_consecutive_addresses(count);
+    fn alloc_many(&mut self, count: usize, reserved: bool) -> Result<(), VMError> {
+        let addresses = self.heap.allocate_consecutive_addresses(count, reserved)?;
         for address in addresses.iter().copied() {
             self.stack.push(Value::new_int(address));
         }
@@ -178,10 +180,11 @@ impl VM {
     }
 
     fn deref(&mut self) -> Result<(), VMError> {
+        // print!("deref");
         let value = self.stack.pop().ok_or(VMError::StackUnderflow)?;
         match value {
             Value::Int(address) => {
-                if let Some(stored_value) = self.heap.lookup_address(address) {
+                if let Ok(stored_value) = self.heap.lookup_address(address) {
                     self.stack.push(stored_value.clone());
                 } else {
                     self.stack.push(Value::Null);
@@ -192,19 +195,20 @@ impl VM {
         }
     }
 
-    fn allocate_list(&mut self, elements: Vec<Value>) -> Result<i64, VMError> {
-        let mut addresses = self.heap.allocate_consecutive_addresses(2);
+    fn allocate_list(&mut self, elements: Vec<Value>, reserved: bool) -> Result<i64, VMError> {
+        let mut addresses = self.heap.allocate_consecutive_addresses(2, reserved)?;
         let head = addresses[0];
         let mut i = 0;
         for elem in elements.clone() {
             i += 1;
-            self.store()?;
-            self.heap.store(addresses[0], Value::Null);
-            self.heap.store(addresses[1], elem);
+            self.heap.store(addresses[0], Value::Null)?;
+            // println!("2");
+            self.heap.store(addresses[1], elem)?;
+            // println!("3");
 
             if i != elements.len() {
-                let next: Vec<i64> = self.heap.allocate_consecutive_addresses(2);
-                self.heap.store(addresses[0], Value::new_int(next[0]));
+                let next: Vec<i64> = self.heap.allocate_consecutive_addresses(2, reserved)?;
+                self.heap.store(addresses[0], Value::new_int(next[0]))?;
                 addresses = next;
             }
         }
@@ -221,30 +225,25 @@ impl VM {
         if n == 0 {
             self.stack.push(address.clone());
         } else if n < 0 {
+            // println!("minus dereference");
             let values = vec![address];
             let fathers = self.mul_minus_deref_vec(values, n)?;
+            // println!("Fathers: {:?}", fathers);
             if fathers.is_empty() {
                 self.stack.push(Value::Null);
             } else {
-                let head = self.allocate_list(fathers)?;
+                let head = self.allocate_list(fathers, true)?;
+                // print!("push_head: {:?}", head);
                 self.stack.push(Value::Int(head));
             }
         } else {
             let mut address_p = address.extract_int()?;
             for _ in 1..n {
-                address_p = self
-                    .heap
-                    .lookup_address(address_p)
-                    .ok_or(VMError::InvalidAddress)?
-                    .extract_int()?;
+                address_p = self.heap.lookup_address(address_p)?.extract_int()?;
             }
 
-            self.stack.push(
-                self.heap
-                    .lookup_address(address_p)
-                    .ok_or(VMError::InvalidAddress)?
-                    .clone(),
-            );
+            self.stack
+                .push(self.heap.lookup_address(address_p)?.clone());
         }
         Ok(())
     }
@@ -253,7 +252,8 @@ impl VM {
         if n == 0 {
             return Ok(values);
         }
-        let selected_ids: Vec<Value> = self.heap.lookup_values(values);
+        let selected_ids: Vec<Value> = self.heap.lookup_values_general(values);
+        // println!("selected_ids: {:?}", selected_ids);
         self.mul_minus_deref_vec(selected_ids, n + 1)
     }
 
@@ -304,7 +304,7 @@ impl VM {
     fn free_addr(&mut self) -> Result<(), VMError> {
         let address = self.stack.pop().ok_or(VMError::StackUnderflow)?;
         if let Value::Int(addr) = address {
-            self.heap.free(addr);
+            self.heap.free(addr, false)?; // TODO
             Ok(())
         } else {
             Err(VMError::InvalidAddress)

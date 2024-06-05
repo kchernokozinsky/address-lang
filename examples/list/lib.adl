@@ -1,11 +1,5 @@
-# l = [1]
-# SP print {l}
-# k = [4]
-# SP append {l, k}
-# SP print {l}
-
 l = [1, 2, 3, 4, 5, 6, 7]
--5 => val
+5 => val
 SP bin_search {l, val, 0, 7, i}
 Print {'i}
 
@@ -15,11 +9,6 @@ get ... null => list; null => index; null => e
     'e = '(D {list, 'index} + 1)  
 return
 
-# get ... ∅ => list; ∅ => index; ∅ => e
-#     '('ⁱⁿᵈᵉˣlist + 1) => e
-# ᗺ
-
-# concat lists
 concat ... null => list1; null => list2;
 
     SP len {list1, len1}
@@ -27,14 +16,6 @@ concat ... null => list1; null => list2;
 
 return
 
-# concat ... ∅ => list1; ∅ => list2;
-
-#     П len {list1, len1}
-#     list2 => 'ˡᵉⁿ¹ ⁻ ¹list1
-
-# ᗺ
-
-# get length of the list
 len ... null => list; null => len
 
     L {0, 1, true => i } l1
@@ -46,17 +27,6 @@ len ... null => list; null => len
     l1 ... 
  return   
 
-#  len ... ∅ => list; ∅ => len
-
-#     Ц {0, 1, true => i } l1
-        
-#     P {'ⁱlist = null} | k
-#             'i => len; 
-#             ᗺ
-#         k...
-#     l1 ... 
-#  ᗺ  
-
 append ... null =>list; null => el
 
     SP len {list, len}
@@ -64,29 +34,12 @@ append ... null =>list; null => el
 
 return
 
-# append ... ∅ => list; ∅ => el
-
-#     П len {list, len}
-#     ∅ => el - 1 
-#     el - 1 => 'ˡᵉⁿ⁻¹list 
-    
-# ᗺ
-
-# rem element by its index 
 rem ... null => list; null => index;
 
     D {list, 'index} = D {list, 'index + 1}
 
 return
 
-# # rem element by its index 
-# rem ... ∅ => list; ∅ => index;
-
-#     'ⁱⁿᵈᵉˣ ⁺ ¹list =>  'ⁱⁿᵈᵉˣ⁻¹list
-
-#ᗺ 
-
-# print list elements
 print ... null => list
     'str = "[" 
     L {0, 1, true => i } l3
@@ -95,18 +48,6 @@ print ... null => list
 end...
 Print {'str, "]"}
 return
-
-# BinarySearch(A[0..N-1], value, low, high) {
-#      if (high < low)
-#          return -1 // не знайдено
-#      mid = (low + high) / 2
-#      if (A[mid] > value)
-#          return BinarySearch(A, value, low, mid-1)
-#      else if (A[mid] < value)
-#          return BinarySearch(A, value, mid+1, high)
-#      else
-#          return mid // знайдено
-#    }
 
 bin_search ... null => list; null => value; null => low; null => high; null => index
     P {high < low} | @not_found
@@ -118,22 +59,5 @@ bin_search ... null => list; null => value; null => low; null => high; null => i
 
     '(D{list, 'mid} + 1) => mid_val
 
-    P {'mid_val > 'value} SP bin_search {list, value, low, 'mid - 1, index}  
-        |  P {'mid_val < 'value} SP bin_search {list, value, 'mid + 1, high, index} 
-            | 'mid => index
+    P {'mid_val > 'value} SP bin_search {list, value, low, 'mid - 1, index}  |  P {'mid_val < 'value} SP bin_search {list, value, 'mid + 1, high, index} | 'mid => index
 return
-
-bin_search ... ∅ => list; ∅ => value; ∅ => low; ∅ => high; ∅ => index
-    P {high < low} ↓ not_found
-        -1 => index
-    return
-    not_found...
-
-    (low + high) / 2 => mid
-
-    '('ᵐⁱᵈlist + 1) => mid_val
-
-    P {'mid_val > 'value} П bin_search {list, value, low, 'mid - 1, index}  
-        ↓  P {'mid_val < 'value} П bin_search {list, value, 'mid + 1, high, index} 
-            ↓ 'mid => index
-ᗺ

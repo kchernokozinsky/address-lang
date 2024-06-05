@@ -14,17 +14,13 @@ SP add_son {c, d}
 SP add_son {c, e}
 SP add_son {c, f}
 
-# SP print_sons {root}
-
-"e" => val
-false => found 
-SP dfs {root, val, found}
-Print {'found}
+ 
+SP print_sons {c}
 
 
 !
 
-dfs ... null => root; null => val; null => found
+dfs ... null => root; null => val; null => visited ;null => found
     P { '(root + 1) == val } | @not_equal
         true => found
         return
@@ -48,14 +44,12 @@ add_son ... null => root; null => son
      root => son
 return 
 
-
 print ... null => val
     L {0, 1, 'j < 5 => j} r
   Print {'j}
     r ...
-
+del j;
 return 
-
 
 # ---------- utils ---------
 print_list ... null => list
@@ -64,7 +58,10 @@ print_list ... null => list
             P {D {list, 'i} == null} @end | 'str = Concat {'str,'('(D {list, 'i} + 1) + 1),","}
     l3 ... 
 end...
+del i;
+del str;
 Print {'str, "]"}
+
 return
 
 sons ... null => n; null => s; null => len
@@ -72,18 +69,11 @@ sons ... null => n; null => s; null => len
     SP len_list {s, len}
 return
 
-rem_mul_deref_results... null => sons; null => len
-    P {'sons == null } | SP rem_list {'sons} 
-    null => len 
-    null => sons
-return
-
 print_sons ... null => n;
     Print {"----------------------------------------------------------------"}
     SP sons {n, sons, len}
     P {'len == 0} Print {"[]"} | SP print_list {'sons} 
     Print {"----------------------------------------------------------------"}
-    SP rem_mul_deref_results {sons, len}
 return
     
 len_list ... null => list; null => len
@@ -96,17 +86,9 @@ len_list ... null => list; null => len
         
     P {D {l, 'i} == null} | @k
             'len = 'i; 
+            del i
             return
         k...
     l1 ... 
-return  
-
-rem_list ... null => list;
-
-    null => (list + 1)
-    P {'list == null} return | next = 'list
-    null => list
-    SP rem_list {next} 
-    
-    
+del i
 return  

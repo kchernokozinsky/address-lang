@@ -3,19 +3,30 @@
 'k = "c"
 Print{"d: ", d}
 Print{"l: ", l}
-Print{"k:", k}
+Print{"k: ", k}
+
+Print {"-------------------------"}
+
+fathers = D {"c", -1 }
+Print {"fathers: ", fathers}
+SP print {fathers} 
+
+Print {"-------------------------"}
+
 fathers = D {"c", -2 }
+Print {"fathers: ", fathers}
 SP print {fathers} 
 
 !
 
-# print list elements
 print ... null => list
     'str = "[" 
     L {0, 1, true => i } l3
             P {D {list, 'i} == null} @end | 'str = Concat {'str,'(D {list, 'i} + 1),","}
     l3 ... 
+
 end...
-# 'str = Concat {'str,(D {list, 'i} + 1)}
 Print {'str,"]"}
+del i
+del str
 return
