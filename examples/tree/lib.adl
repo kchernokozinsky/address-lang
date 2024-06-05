@@ -1,66 +1,63 @@
-root = [100000]
+root = ["root"]
 
-a = [20000]
-b = [50000]
-SP insert {root, a}
+a = ["a"]
+b = ["b"]
+c = ["c"]
+d = ["d"]
+e = ["e"]
+f = ["f"]
 
-SP print_sons {a}
-SP insert {root, [10000]}
-SP print_sons {a}
-SP insert {root, b}
-SP print_sons {a}
-SP insert {root, [30000]}
+SP add_son {root, a}
+SP add_son {root, b}
+SP add_son {root, c}
+SP add_son {c, d}
+SP add_son {c, e}
+SP add_son {c, f}
+
+# SP print_sons {root}
+
+"e" => val
+false => found 
+SP dfs {root, val, found}
+Print {'found}
 
 
 !
 
-
-insert ... null => root; null => new_son
-    Print {"Start with son: ", '(new_son + 1), " and root: ", '(root + 1)}
-    SP sons {root, sons}
-    SP len_list {sons, len}
-    Print {"len: ", 'len}
-    P {'len == 0 } | @one
-
-        null => len 
-        root => new_son
+dfs ... null => root; null => val; null => found
+    P { '(root + 1) == val } | @not_equal
+        true => found
         return
+    not_equal ...
+    SP sons {root, sons, len}
+    P {len == 0} return |
+    L {0, 1, 'i < 'len => i} l
+        cur_node = D{'sons, 'i}       
+        SP dfs {cur_node, val, found}
+        P { 'found } return |
+    l ...
 
-    one ...
-    P {'len == 1 } | @two
-        n = '('sons + 1)
-        Print {"one"}
-        # P { '(n + 1) }
-        Print {('(new_son + 1) < '(root + 1) and '(n + 1) < '(root + 1))}
-        P { ('(new_son + 1) < '(root + 1) and '(n + 1) < '(root + 1)) or  ('(new_son + 1) > '(root + 1) and '(n + 1) > '(root + 1))} | @insert1
-            Print {"sdds"}
-            SP rem_list {'sons}
-            null => len
-            null => sons
-            SP insert {n, new_son}
-            return
-        insert1...
+return
 
-            Print {"insert1..."}
-            SP rem_list {'sons}
-            null => len 
-            null => sons
-            root => new_son
-            return
-    two ...
-    Print {"two"}
-    l = '('sons + 1)
-    r = '(''sons + 1)
-    SP rem_list {'sons}
-    null => len 
-    null => sons
-    # left son should be less, otherwise they are exhanched
-    P { '(l + 1) > '(r + 1) } c = l; l = r; r = c | 
-    Print {"condition: ", '(root + 1) > '(new_son + 1) }
-    P { '(root + 1) > '(new_son + 1) } SP insert {l, new_son} | SP insert {r, new_son}
-    return
-    
+sons ... null => n; null => s; null => len
+    D {n, -1} => s
+    SP len_list {s, len}
+return
 
+add_son ... null => root; null => son 
+     root => son
+return 
+
+
+print ... null => val
+    L {0, 1, 'j < 5 => j} r
+  Print {'j}
+    r ...
+
+return 
+
+
+# ---------- utils ---------
 print_list ... null => list
     'str = "[" 
     L {0, 1, true => i } l3
@@ -70,19 +67,23 @@ end...
 Print {'str, "]"}
 return
 
-sons ... null => n; null => s 
+sons ... null => n; null => s; null => len
     D {n, -1} => s
+    SP len_list {s, len}
+return
+
+rem_mul_deref_results... null => sons; null => len
+    P {'sons == null } | SP rem_list {'sons} 
+    null => len 
+    null => sons
 return
 
 print_sons ... null => n;
     Print {"----------------------------------------------------------------"}
-    D {n, -1} => d
-    SP len_list {d, len}
-    P {'len == 0} Print {"[]"} | SP print_list {'d} 
+    SP sons {n, sons, len}
+    P {'len == 0} Print {"[]"} | SP print_list {'sons} 
     Print {"----------------------------------------------------------------"}
-    P {'len == 0 } | SP rem_list {'d}
-    nul => len
-    null => d
+    SP rem_mul_deref_results {sons, len}
 return
     
 len_list ... null => list; null => len
