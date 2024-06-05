@@ -98,4 +98,20 @@ This document specifies the LR(1) grammar used in our project.
 <Identifier> ::= ...
 ```
 
+## Syntax Transformation Table
 
+The syntax of the Addressed Programming Language, although a powerful tool for manipulating complex hierarchical data structures, has proven not entirely convenient for writing programs on modern computers. The original syntax of the Addressing Language uses a lot of characters that are not always available on a standard keyboard, which makes writing code much more complicated and slower. To simplify and speed up writing programs in the Addressing Language, it was decided to make certain replacements in the notation.
+
+
+
+| Element Name                   | Original Syntax                           | Updated Syntax                      |
+|--------------------------------|-------------------------------------------|-------------------------------------|
+| Formula of Relative Stop       | ᗺ                                        | return                              |
+| Formula of Relative Transition | ↓n                                       | \|n                                 |
+| Entry Formula                  | П α { a1, …, an } β                       | SP a { a1, …, an } b                |
+| Predicate Formula              | P { L } α ↓ β                             | P { L } α \| β                      |
+| Loop Formula                   | Ц{a, step, condition => pi } b l           | L{a, step, condition => pi } b l    |
+| Empty Set                      | ∅                                         | null                                |
+| Multiple Stroke Operation      | kn                                        | D { n, k }                          |
+| Unconditional Transition Labels| label                                     | @label                              |
+| Replacement Formula            | З{ …}                                     | R{ …}                               |
