@@ -1,7 +1,6 @@
-
 # Address Language
 
-Address Language  developed by Ekaterina Logvinovna Yushchenko is a programming language designed to process complex hierarchical structures using an imperative programming style. This project includes a parser, a virtual machine (VM), and a code generator to facilitate the execution of programs written in Address Language.
+Address Language  developed by Katerina Logvynivna Yushchenko is a programming language designed to process complex hierarchical structures using an imperative programming style. This project includes a parser, a virtual machine (VM), and a code generator to facilitate executing of programs written in Address Language.
 
 ## Table of Contents
 
@@ -41,7 +40,7 @@ To run a program written in Address Language, you need to use adl-cli.
    ```sh
    cargo run --bin adl-cli
    ```
-   ![cli] (pics/cli.png) 
+   ![cli](https://github.com/kchernokozinsky/address-lang/blob/main/pics/cli.png)
 
 3. **Execute your code:**
 
