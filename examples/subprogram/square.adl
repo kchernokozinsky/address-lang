@@ -1,0 +1,9 @@
+5 => k
+SP square { k}
+Print { "k * k = ", 'k}
+
+!
+
+square... null => n
+'n * 'n => n
+return

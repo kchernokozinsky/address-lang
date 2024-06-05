@@ -47,6 +47,8 @@ print ... null => list
     l3 ... 
 end...
 Print {'str, "]"}
+del i;
+del str;
 return
 
 bin_search ... null => list; null => value; null => low; null => high; null => index
