@@ -14,25 +14,28 @@ SP add_son {c, d}
 SP add_son {c, e}
 SP add_son {c, f}
 
- 
-SP print_sons {c}
-
+false => found
+"root" => val
+SP dfs {root, val, 1000, found}
+Print {'found}
 
 !
 
-dfs ... null => root; null => val; null => visited ;null => found
-    P { '(root + 1) == val } | @not_equal
+dfs ... null => root; null => val; null => offset; null => found;
+    P { '(root + 1) == 'val } | @not_equal
         true => found
         return
     not_equal ...
     SP sons {root, sons, len}
-    P {len == 0} return |
-    L {0, 1, 'i < 'len => i} l
-        cur_node = D{'sons, 'i}       
-        SP dfs {cur_node, val, found}
-        P { 'found } return |
+    'len + offset => len
+    P {'len == offset} @ret |
+    L {offset, 1, 'i < 'len => i} l
+        cur_node = D{'sons, 'i - offset}
+        SP dfs {'(cur_node + 1), val, offset, found}
+        P { 'found } @ret | 
     l ...
-
+ret ...
+del i; del len;
 return
 
 sons ... null => n; null => s; null => len
@@ -44,23 +47,18 @@ add_son ... null => root; null => son
      root => son
 return 
 
-print ... null => val
-    L {0, 1, 'j < 5 => j} r
-  Print {'j}
-    r ...
-del j;
-return 
-
 # ---------- utils ---------
+
 print_list ... null => list
+
     'str = "[" 
     L {0, 1, true => i } l3
             P {D {list, 'i} == null} @end | 'str = Concat {'str,'('(D {list, 'i} + 1) + 1),","}
     l3 ... 
 end...
-del i;
-del str;
-Print {'str, "]"}
+    Print {'str, "]"}
+    del i;
+    del str;
 
 return
 

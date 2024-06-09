@@ -13,7 +13,7 @@ pub enum ValueError {
         expected_type: Type,
         actual_type: Type,
         actual_value: String,
-    }, // ... other error types can be added here ...
+    },
     _UnexpectedType {
         expected_types: Vec<Type>,
         actual_type: Type,
@@ -53,7 +53,6 @@ impl std::fmt::Display for ValueError {
                 "Expect types '{:?}', but actual : ({}: {})",
                 expected_types, actual_type, actual_value
             ),
-            // ... handle other errors ...
         }
     }
 }
