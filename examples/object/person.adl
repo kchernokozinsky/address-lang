@@ -1,19 +1,4 @@
-
-"Alice" => name1
-23 => age1
-null => married_on1
-
-"Bob" => name2
-25 => age2
-null => married_on2
-
-SP new {name1,age1, married_on1, alice}
-SP new {name2,age2, married_on2, bob}
-
-SP say_hi {'alice}
-SP say_age {'alice}
-SP marry {alice, bob}
-SP say_who_you_married_on {alice}
+@main
 !
 
 new ... null => name; null => age; null => married_on; null => person;
@@ -23,7 +8,7 @@ new ... null => name; null => age; null => married_on; null => person;
     p => person
 return
 
-rem ... null => person;
+destruct ... null => person;
     null => person
     null => person + 1
     null => person + 2;
@@ -47,6 +32,29 @@ marry ... null => person1; null => person2;
     'person1 => 'person2 + 2
 return
 
+
+main... 
+
+"Alice" => name1
+23 => age1
+null => married_on1
+
+"Bob" => name2
+25 => age2
+null => married_on2
+
+SP new {name1,age1, married_on1, alice}
+SP new {name2,age2, married_on2, bob}
+
+SP say_hi {'alice}
+SP say_age {'alice}
+
+SP marry {alice, bob}
+
+SP say_who_you_married_on {alice}
+
+SP destruct {alice}
+SP destruct {bob}
 
 
 

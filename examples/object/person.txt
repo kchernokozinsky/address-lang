@@ -1,0 +1,61 @@
+@main
+!
+
+new ... ∅ ⇒ name; ∅ ⇒ age; ∅ ⇒ married_on; ∅ ⇒ person;
+    'name ⇒ p
+    'age ⇒ p + 1
+    'married_on ⇒ p + 2;
+    p ⇒ person
+ᗺ
+
+destruct ... ∅ ⇒ person;
+    ∅ ⇒ person
+    ∅ ⇒ person + 1
+    ∅ ⇒ person + 2;
+ᗺ
+
+say_hi ... ∅ ⇒ person;
+    P {'person == ∅} Print {"Hello, I have no name :("} ↓ Print {"Hello, my name is ", 'person}
+ᗺ
+
+say_age ... ∅ ⇒ person;
+    P {'(person + 1) == ∅} Print {"I don`t how old I am :("} ↓ Print {"I`m ", '(person + 1), " years old"}
+ᗺ
+
+say_who_you_married_on ... ∅ ⇒ person;
+    p = 'person + 2
+    P { 'p == ∅} Print {"I`m not married yet"} ↓ Print {"I`m married on ", ''p}
+ᗺ
+
+marry ... ∅ ⇒ person1; ∅ ⇒ person2;
+    'person2 ⇒ 'person1 + 2
+    'person1 ⇒ 'person2 + 2
+ᗺ
+
+
+main... 
+
+"Alice" ⇒ name1
+23 ⇒ age1
+∅ ⇒ married_on1
+
+"Bob" ⇒ name2
+25 ⇒ age2
+∅ ⇒ married_on2
+
+П new {name1,age1, married_on1, alice}
+П new {name2,age2, married_on2, bob}
+
+П say_hi {'alice}
+П say_age {'alice}
+
+П marry {alice, bob}
+
+П say_who_you_married_on {alice}
+
+П destruct {alice}
+П destruct {bob}
+
+
+
+
