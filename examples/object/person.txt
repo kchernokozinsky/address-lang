@@ -55,7 +55,3 @@ main...
 
 П destruct {alice}
 П destruct {bob}
-
-
-
-

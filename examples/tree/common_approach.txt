@@ -1,36 +1,4 @@
-# tree inizialization
-
-100 => root
-П node {root}
-
-20 => a
-П node {a}
-
-
-50 => b
-П node {b}
-
-300 => c
-П node {c}
-
-150 => d
-П node {d}
-
-10 => e
-П node {e}
- 
-20 => val
-
-П insert {root, a}
-П insert {root, b}
-П insert {root, c}
-П insert {root, d}
-П insert {root, e}
-П print_tree {root}
-Print {"----------------------------------------------------------------"}
-П rem {father,root, a}
-П print_tree {root}
-
+main
 !
 
 insert ... ∅ => root;  ∅ => node 
@@ -117,24 +85,34 @@ node... ∅ => val
 ᗺ
 
 
+main ...
+100 => root
+П node {root}
+
+20 => a
+П node {a}
 
 
+50 => b
+П node {b}
 
-dfs ... ∅ => root; ∅ => val; ∅ => found
-    P { '(root + 1) = val } | not_equal
-        true => found
-        ᗺ
-    not_equal ...
-    П sons {root, sons, len}
-    P {len = 0} ᗺ |
-    L {0, 1, 'i < 'len => i} l       
-        П dfs {'ⁱ⁺¹sons, val, found}
-        P { 'found } ᗺ |
-    l ...
+300 => c
+П node {c}
 
-ᗺ
+150 => d
+П node {d}
 
-sons ... ∅ => n; ∅ => s; ∅ => len
-    ⁻'n => s
-    П len_list {s, len}
-ᗺ
+10 => e
+П node {e}
+ 
+20 => val
+
+П insert {root, a}
+П insert {root, b}
+П insert {root, c}
+П insert {root, d}
+П insert {root, e}
+П print_tree {root}
+Print {"----------------------------------------------------------------"}
+П rem {father,root, a}
+П print_tree {root}

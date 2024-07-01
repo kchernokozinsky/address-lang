@@ -1,34 +1,5 @@
 # tree inizialization
-
-100 => root
-SP node {root}
-
-20 => a
-SP node {a}
-
-50 => b
-SP node {b}
-
-300 => c
-SP node {c}
-
-150 => d
-SP node {d}
-
-10 => e
-SP node {e}
- 
-20 => val
-SP insert {root, a}
-SP insert {root, b}
-SP insert {root, c}
-SP insert {root, d}
-SP insert {root, e}
-SP print_tree {root}
-Print {"----------------------------------------------------------------"}
-SP rem {father,root, a}
-SP print_tree {root}
-
+@main
 !
 
 insert ... null => root;  null => node 
@@ -121,3 +92,34 @@ node... null => val
     null => val + 1
     null => val + 2
 return
+
+main...
+
+100 => root
+SP node {root}
+
+20 => a
+SP node {a}
+
+50 => b
+SP node {b}
+
+300 => c
+SP node {c}
+
+150 => d
+SP node {d}
+
+10 => e
+SP node {e}
+ 
+20 => val
+SP insert {root, a}
+SP insert {root, b}
+SP insert {root, c}
+SP insert {root, d}
+SP insert {root, e}
+SP print_tree {root}
+Print {"--------------"}
+SP rem {father,root, a}
+SP print_tree {root}
