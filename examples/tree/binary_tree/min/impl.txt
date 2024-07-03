@@ -1,0 +1,67 @@
+M 
+
+insert ... ∅ ⇒ root;  ∅ ⇒ node 
+    P { 'root > 'node }  ↓ gte
+        P { '(root + 1) = ∅ } node ⇒ root + 1 ↓ П insert {'(root + 1), node}
+            ᗺ
+    gte ... 
+        P { '(root + 2) = ∅ } node ⇒ root + 2 ↓ П insert {'(root + 2), node}
+           ᗺ
+ᗺ
+
+min ... ∅ ⇒ node; ∅ ⇒ leaf;
+    П is_leaf {node, is_leaf}
+    P { 'is_leaf} ↓ not_leaf
+        node ⇒ leaf
+        ᗺ
+    not_leaf...
+    П has_one_son {node, son}
+    P { 'son = ∅ } two_sons↓ 
+        П min {'son, leaf}
+        ᗺ
+    two_sons ...
+    P { ''(node + 1) < ''(node + 2) } П min {'(node + 1), leaf} ↓ П min {'(node + 2), leaf}
+ᗺ
+
+is_leaf ... ∅ ⇒ node; ∅ ⇒ is_leaf
+    '(node + 1) = ∅ and '(node + 2) = ∅ ⇒     is_leaf
+ᗺ
+
+has_one_son ... ∅ => node; ∅ => one_son
+    P { '(node + 1) ≠ ∅ and '(node + 2) ≠ ∅} ᗺ ↓
+    P { '(node + 1) = ∅ and '(node + 2) = ∅} ᗺ ↓
+    P { '(node + 1) = ∅ } '(node + 2) ⇒ one_son ↓ '(node + 1) ⇒ one_son
+ᗺ
+    
+node... ∅ ⇒ val
+    ∅ ⇒ val + 1
+    ∅ ⇒ val + 2
+ᗺ
+
+M ...
+100 ⇒ root
+П node {root}
+
+20 ⇒ a
+П node {a}
+
+50 ⇒ b
+П node {b}
+
+300 ⇒ c
+П node {c}
+
+150 ⇒ d
+П node {d}
+
+10 ⇒ e
+П node {e}
+
+П insert {root, a}
+П insert {root, b}
+П insert {root, c}
+П insert {root, d}
+П insert {root, e}
+Печать "------------"
+П min {root, min}
+Печать ''min

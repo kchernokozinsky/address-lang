@@ -1,0 +1,50 @@
+M 
+
+insert ... ∅ ⇒ root;  ∅ ⇒ node 
+    P { 'root > 'node }  ↓ gte
+        P { '(root + 1) = ∅ } node ⇒ root + 1 ↓ П insert {'(root + 1), node}
+            ᗺ
+    gte ... 
+        P { '(root + 2) = ∅ } node ⇒ root + 2 ↓ П insert {'(root + 2), node}
+           ᗺ
+ᗺ
+
+print_tree ... ∅ ⇒ tree 
+    l = tree + 1
+    r = tree + 2
+    P { 'l = ∅ } ↓ П print_tree {'l}
+    Печать 'tree
+    P { 'r = ∅ } ↓ П print_tree {'r}
+ᗺ
+    
+node... ∅ ⇒ val
+    ∅ ⇒ val + 1
+    ∅ ⇒ val + 2
+ᗺ
+
+M ...
+
+100 ⇒ root
+П node {root}
+
+20 ⇒ a
+П node {a}
+
+50 ⇒ b
+П node {b}
+
+300 ⇒ c
+П node {c}
+
+150 ⇒ d
+П node {d}
+
+10 ⇒ e
+П node {e}
+
+П insert {root, a}
+П insert {root, b}
+П insert {root, c}
+П insert {root, d}
+П insert {root, e}
+П print_tree {root} 

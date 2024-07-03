@@ -1,0 +1,99 @@
+@M
+
+insert ... null => root;  null => node 
+    P { 'root > 'node }  | @gte
+        P { '(root + 1) == null } node => root + 1 | SP insert {'(root + 1), node}
+            return
+    gte ... 
+        P { '(root + 2) == null } node => root + 2 | SP insert {'(root + 2), node}
+            return
+return
+
+rem ... null => father; null => node; null => val; 
+    P { 'node == 'val } | @to_find
+        SP is_leaf {node, is_leaf}
+        P { 'is_leaf}  | @case2
+        P { node == '(father + 1)} null => father + 1 | null => father + 2
+        return
+    case2 ...
+        SP has_one_son {node, son}
+        P { 'son == null  } @case3 | 
+        P { node == '(father + 1)} 'son => father + 1 | 'son => father + 2
+        return
+    case3 ...
+    
+    SP min {node, leaf}
+
+    SP rem {father, node, 'leaf}
+
+    P { node == '(father + 1)} 'leaf => father + 1 | 'leaf => father + 2
+    '(node + 1) => 'leaf + 1; '(node + 2) => 'leaf + 2
+    return
+
+min ... null => node; null => leaf;
+    SP is_leaf {node, is_leaf}
+    P { 'is_leaf} | @not_leaf
+        node => leaf
+        return
+    not_leaf...
+    SP has_one_son {node, son}
+    P { 'son == null } @two_sons| 
+        SP min {'son, leaf}
+        return
+    two_sons ...
+    P { ''(node + 1) < ''(node + 2) } SP min {'(node + 1), leaf} | SP min {'(node + 2), leaf}
+return
+
+is_leaf ... null => node; null => is_leaf
+    '(node + 1) == null and '(node + 2) == null => is_leaf
+return
+
+has_one_son ... null => node; null => one_son
+    P { '(node + 1) != null and '(node + 2) != null} return |
+    P { '(node + 1) == null and '(node + 2) == null} return |
+    P { '(node + 1) == null } '(node + 2) => one_son | '(node + 1) => one_son
+return
+
+print_tree ... null => tree 
+    l = tree + 1
+    r = tree + 2
+    P { 'l == null } | SP print_tree {'l}
+    Print {'tree}
+    P { 'r == null } | SP print_tree {'r}
+return
+    
+node... null => val
+    null => val + 1
+    null => val + 2
+return
+
+M...
+
+100 => root
+SP node {root}
+
+20 => a
+SP node {a}
+
+50 => b
+SP node {b}
+
+300 => c
+SP node {c}
+
+150 => d
+SP node {d}
+
+10 => e
+SP node {e}
+ 
+20 => val
+SP insert {root, a}
+SP insert {root, b}
+SP insert {root, c}
+SP insert {root, d}
+SP insert {root, e}
+SP print_tree {root}
+Print {"--------------"}
+SP rem {father,root, a}
+SP print_tree {root}

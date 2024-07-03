@@ -1,5 +1,4 @@
-@main
-!
+M
 
 new ... ∅ ⇒ name; ∅ ⇒ age; ∅ ⇒ married_on; ∅ ⇒ person;
     'name ⇒ p
@@ -15,16 +14,15 @@ destruct ... ∅ ⇒ person;
 ᗺ
 
 say_hi ... ∅ ⇒ person;
-    P {'person == ∅} Print {"Hello, I have no name :("} ↓ Print {"Hello, my name is ", 'person}
+    P {'person = ∅} Печать "Hello, I have no name :(" ↓ Печать "Hello, my name is " + 'person
 ᗺ
 
 say_age ... ∅ ⇒ person;
-    P {'(person + 1) == ∅} Print {"I don`t how old I am :("} ↓ Print {"I`m ", '(person + 1), " years old"}
+    P {'(person + 1) = ∅} Печать "I don`t how old I am :(" ↓ Печать "I`m " + '(person + 1) + " years old"
 ᗺ
 
 say_who_you_married_on ... ∅ ⇒ person;
-    p = 'person + 2
-    P { 'p == ∅} Print {"I`m not married yet"} ↓ Print {"I`m married on ", ''p}
+    P { '('person + 2) = ∅} Печать "I`m not married yet" ↓ Печать "I`m married on " + ''('person + 2)
 ᗺ
 
 marry ... ∅ ⇒ person1; ∅ ⇒ person2;
@@ -32,8 +30,7 @@ marry ... ∅ ⇒ person1; ∅ ⇒ person2;
     'person1 ⇒ 'person2 + 2
 ᗺ
 
-
-main... 
+M... 
 
 "Alice" ⇒ name1
 23 ⇒ age1

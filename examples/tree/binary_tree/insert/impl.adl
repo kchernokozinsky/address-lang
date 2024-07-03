@@ -1,0 +1,50 @@
+@M
+
+insert ... null => root;  null => node 
+    P { 'root > 'node }  | @gte
+        P { '(root + 1) == null } node => root + 1 | SP insert {'(root + 1), node}
+            return
+    gte ... 
+        P { '(root + 2) == null } node => root + 2 | SP insert {'(root + 2), node}
+            return
+return
+
+print_tree ... null => tree 
+    l = tree + 1
+    r = tree + 2
+    P { 'l == null } | SP print_tree {'l}
+    Print {'tree}
+    P { 'r == null } | SP print_tree {'r}
+return
+    
+node... null => val
+    null => val + 1
+    null => val + 2
+return
+
+M...
+
+100 => root
+SP node {root}
+
+20 => a
+SP node {a}
+
+50 => b
+SP node {b}
+
+300 => c
+SP node {c}
+
+150 => d
+SP node {d}
+
+10 => e
+SP node {e}
+ 
+SP insert {root, a}
+SP insert {root, b}
+SP insert {root, c}
+SP insert {root, d}
+SP insert {root, e}
+SP print_tree {root}
