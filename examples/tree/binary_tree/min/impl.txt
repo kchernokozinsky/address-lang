@@ -20,7 +20,9 @@ min ... ∅ ⇒ node; ∅ ⇒ leaf;
         П min {'son, leaf}
         ᗺ
     two_sons ...
-    P { ''(node + 1) < ''(node + 2) } П min {'(node + 1), leaf} ↓ П min {'(node + 2), leaf}
+    '(node + 1) ⇒ n1
+    '(node + 2) ⇒ n2
+    P { ''n1 < ''n2 } П min {'n1, leaf} | П min {'n2, leaf}
 ᗺ
 
 is_leaf ... ∅ ⇒ node; ∅ ⇒ is_leaf

@@ -22,9 +22,9 @@ min ... null => node; null => leaf;
         SP min {'son, leaf}
         return
     two_sons ...
-    n1 = '(node + 1)
-    n2 = '(node + 2)
-    P { 'n1 < 'n2 } SP min {n1, leaf} | SP min {n2, leaf}
+    '(node + 1) => n1
+    '(node + 2) => n2
+    P { ''n1 < ''n2 } SP min {'n1, leaf} | SP min {'n2, leaf}
 return
 
 is_leaf ... null => node; null => is_leaf
